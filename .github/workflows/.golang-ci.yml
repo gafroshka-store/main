@@ -4,18 +4,16 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - maina
       - develop
       - 'feature/**'
-  pull_request_target:
+  pull_request:
     branches:
       - main
+      - develop
+      - 'feature/**'
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   build:
@@ -37,14 +35,12 @@ jobs:
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
           $(go env GOPATH)/bin/golangci-lint run --config .golint.yaml
-
   test:
     name: Test code
     runs-on: ubuntu-latest
 
-    needs: build
-    
+    need: build
+
     steps:
       - name: tests
         run: go test -v ./...
-
