@@ -39,7 +39,7 @@ jobs:
     name: Test code
     runs-on: ubuntu-latest
 
-    need: build
+    needs: build
 
     steps:
       - name: tests
