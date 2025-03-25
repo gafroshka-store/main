@@ -1,0 +1,39 @@
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  gocyclo:
+    min-complexity: 10
+
+  gofmt:
+    simplify: true
+
+  misspell:
+    locale: US
+
+  goconst:
+    min-len: 3
+    min-occurrences: 2
+
+  deadcode:
+    enable: true
+
+linters:
+  enable:
+    - errcheck        # Проверяет необработанные ошибки
+    - gocyclo         # Проверяет цикломатическую сложность
+    - govet           # Анализатор кода, обнаруживающий ошибки
+    - gofmt           # Проверяет стиль кода
+    - misspell        # Проверяет орфографические ошибки
+    - goconst         # Находит дублирующиеся строковые и числовые константы
+    - dupl            # Находит дублированный код
+    - unparam         # Проверяет неиспользуемые параметры
+    - copyloopvar   # Обнаруживает замыкания на переменные в цикле
+    - ineffassign     # Находит неэффективные присваивания
+    - lll             # Проверяет длину строк
+    - unconvert
+    - gosimple
+    - copyloopvar
+    - staticcheck
+    - gosec
