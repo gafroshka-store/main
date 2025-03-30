@@ -1,1 +1,14 @@
-# Думаю не стоит объяснять
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: go_app
+    ports:
+      - "8080:8080"
+    environment:
+      - ENV=production
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["/root/main"]
