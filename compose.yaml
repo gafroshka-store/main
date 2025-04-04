@@ -12,6 +12,9 @@ services:
       - .:/app
     working_dir: /app
     command: ["/root/main"]
+    depends_on:
+      postgres_db1:
+        condition: service_healthy  
 
   postgres_db1:
     image: postgres:latest
@@ -26,6 +29,12 @@ services:
     volumes:
       - postgres_db1_data:/var/lib/postgresql/data
       - ./db_migration/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user1 -d database1"]
+      interval: 5s  
+      timeout: 5s    
+      retries: 5     
+      start_period: 3s  
 
 volumes:
   postgres_db1_data:
