@@ -27,7 +27,6 @@
 ### Принимает:
 ```json
 {
-  "username": "string",
   "male": "bool",
   "firstName": "string",
   "lastName": "string",
@@ -61,7 +60,6 @@
 ```json
 {
   "user_id": "uuid",
-  "username": "string",
   "email": "string",
   "firstName": "string",
   "lastName": "string",
