@@ -1,5 +1,31 @@
 # Main Handlers
 
+## Registration (POST)
+### Принимает:
+```json
+{
+  "email": "string",
+  "password": "string",
+  "phone_number": "string",
+  "firstName": "string",
+  "lastName": "string"
+}
+```
+### Возвращает:
+- **200 OK** при успешной авторизации
+```json
+{
+  "token": "jwt_token",
+  "user_id": "uuid"
+}
+```
+- **401 Unauthorized** если неверные данные
+```json
+{
+  "error": "Invalid credentials"
+}
+```
+
 ## Authorization (POST)
 ### Принимает:
 ```json
@@ -31,6 +57,7 @@
   "firstName": "string",
   "lastName": "string",
   "age": "int",
+  "email": "string",
   "phone_number": "string"
 }
 ```
