@@ -7,16 +7,15 @@
   "email": "string",
   "password": "string",
   "phone_number": "string",
-  "firstName": "string",
-  "lastName": "string"
+  "name": "string",
+  "surname": "string"
 }
 ```
 ### Возвращает:
 - **200 OK** при успешной авторизации
 ```json
 {
-  "token": "jwt_token",
-  "user_id": "uuid"
+  "token": "jwt_token"
 }
 ```
 - **401 Unauthorized** если неверные данные
@@ -38,8 +37,7 @@
 - **200 OK** при успешной авторизации
 ```json
 {
-  "token": "jwt_token",
-  "user_id": "uuid"
+  "token": "jwt_token"
 }
 ```
 - **401 Unauthorized** если неверные данные
@@ -53,9 +51,8 @@
 ### Принимает:
 ```json
 {
-  "male": "bool",
-  "firstName": "string",
-  "lastName": "string",
+  "name": "string",
+  "surname": "string",
   "age": "int",
   "email": "string",
   "phone_number": "string"
@@ -89,8 +86,8 @@
 {
   "user_id": "uuid",
   "email": "string",
-  "firstName": "string",
-  "lastName": "string",
+  "name": "string",
+  "surname": "string",
   "age": "int",
   "male": "bool",
   "phone_number": "string"
