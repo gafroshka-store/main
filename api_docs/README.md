@@ -23,14 +23,15 @@
 }
 ```
 
-## ChangeProfile (PUT)
+## UpdateProfile (PUT)
 ### Принимает:
 ```json
 {
   "male": "bool",
   "firstName": "string",
   "lastName": "string",
-  "age": "int"
+  "age": "int",
+  "phone_number": "string"
 }
 ```
 ### Возвращает:
@@ -64,7 +65,8 @@
   "firstName": "string",
   "lastName": "string",
   "age": "int",
-  "male": "bool"
+  "male": "bool",
+  "phone_number": "string"
 }
 ```
 - **401 Unauthorized** если токен неверный или отсутствует
