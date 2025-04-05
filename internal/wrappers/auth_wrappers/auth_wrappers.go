@@ -37,13 +37,12 @@ func NewAuthWrapper() *AuthWrapper {
 
 // Auth обертка на запрос в сервис авторизации
 func (aw *AuthWrapper) Auth(username, password string) (string, error) {
-	url := aw.BaseURL + "/auth/login"
 	requestBody, err := json.Marshal(AuthRequest{Username: username, Password: password})
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post(aw.BaseURL+"/auth/login", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return "", err
 	}

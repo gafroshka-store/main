@@ -51,7 +51,11 @@ func TestUserDBRepository_Info(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{
 						"user_id", "name", "surname", "registration_data",
 						"email", "phone_number", "balance", "deals_count",
-					}).AddRow("123", "John", "Doe", time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC), "john@example.com", "1234567890", 100.0, 5))
+					}).AddRow(
+						"123", "John", "Doe",
+						time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
+						"john@example.com", "1234567890", 100.0, 5,
+					))
 			},
 			expected: User{
 				ID:               "123",
@@ -132,7 +136,11 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{
 						"user_id", "name", "surname", "registration_data",
 						"email", "phone_number", "balance", "deals_count",
-					}).AddRow("123", "Alice", "Doe", time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC), "alice@example.com", "1234567890", 100.0, 5))
+					}).AddRow(
+						"123", "Alice", "Doe",
+						time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
+						"alice@example.com", "1234567890", 100.0, 5,
+					))
 			},
 			expectedResult: User{
 				ID:               "123",
@@ -156,7 +164,11 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 					WillReturnRows(sqlmock.NewRows([]string{
 						"user_id", "name", "surname", "registration_data",
 						"email", "phone_number", "balance", "deals_count",
-					}).AddRow("123", "John", "Doe", time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC), "john@example.com", "1234567890", 100.0, 5))
+					}).AddRow(
+						"123", "John", "Doe",
+						time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
+						"john@example.com", "1234567890", 100.0, 5,
+					))
 			},
 			expectedResult: User{
 				ID:               "123",

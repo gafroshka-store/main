@@ -47,7 +47,12 @@ func (ur *UserDBRepository) Info(userID string) (User, error) {
 	WHERE user_id = $1
 	`
 
-	err := ur.DB.QueryRow(query, userID).Scan(&u.ID, &u.Name, &u.Surname, &u.RegistrationDate, &u.Email, &u.PhoneNumber, &u.Balance, &u.DealsCount)
+	err := ur.DB.QueryRow(query, userID).
+		Scan(
+			&u.ID, &u.Name, &u.Surname,
+			&u.RegistrationDate, &u.Email,
+			&u.PhoneNumber, &u.Balance, &u.DealsCount,
+		)
 	if err != nil {
 		// Нужно проверить на NoRows
 		ur.Logger.Warnf("Ошибка при получения информации о пользователе: %v", err)
@@ -88,7 +93,7 @@ func (ur *UserDBRepository) ChangeProfile(userID string, updateUser types.Change
 		return ur.Info(userID) // Если ничего не обновляется, просто вернуть текущие данные
 	}
 
-	query := "UPDATE users SET " + strings.Join(fields, ", ") + " WHERE user_id = $" + strconv.Itoa(argID)
+	query := "UPDATE users SET " + strings.Join(fields, ", ") + " WHERE user_id = $" + strconv.Itoa(argID) // nolint:gosec
 	args = append(args, userID)
 
 	_, err := ur.DB.Exec(query, args...)
