@@ -47,15 +47,13 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
           $(go env GOPATH)/bin/golangci-lint run --config .golint.yaml
 
-      # Если нужно сохранить бинарник (или другой результат сборки),
-      # используем upload-artifact. Если не нужно, можете убрать.
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  
         with:
           name: build-output
           path: .
-          # Если нужно только бинарник, укажите точный путь, например:
-          # path: ./myapp
+          if-no-files-found: error  
+          retention-days: 1 
 
   test:
     name: Test code
@@ -81,10 +79,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # Если в тестах нужен собранный бинарник из build,
-      # скачиваем его через download-artifact.
       - name: Download build artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4  # Changed from v3 to v4
         with:
           name: build-output
 
