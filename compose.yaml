@@ -12,6 +12,8 @@ services:
       - .:/app
     working_dir: /app
     command: ["/root/main"]
+    networks:
+      - shared-network
     depends_on:
       postgres_db1:
         condition: service_healthy  
@@ -34,7 +36,14 @@ services:
       interval: 5s  
       timeout: 5s    
       retries: 5     
-      start_period: 3s  
+      start_period: 3s
+    networks:
+      - shared-network
 
 volumes:
   postgres_db1_data:
+
+networks:
+  shared-network:
+    name: shared-network
+    external: false
