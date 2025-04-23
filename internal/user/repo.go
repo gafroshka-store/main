@@ -38,20 +38,25 @@ func (ur *UserDBRepository) Info(userID string) (User, error) {
 	SELECT user_id, 
 		   name,
 		   surname,
+		   day_of_birth,
+		   sex,
 		   registration_data,
 		   email,
 		   phone_number,
 		   balance,
-		   deals_count
+		   deals_count,
+		   rating,
+		   rating_count
 	FROM users
 	WHERE user_id = $1
 	`
 
 	err := ur.DB.QueryRow(query, userID).
 		Scan(
-			&u.ID, &u.Name, &u.Surname,
-			&u.RegistrationDate, &u.Email,
+			&u.ID, &u.Name, &u.Surname, &u.DayOfBirth,
+			&u.Sex, &u.RegistrationDate, &u.Email,
 			&u.PhoneNumber, &u.Balance, &u.DealsCount,
+			&u.Rating, &u.RatingCount,
 		)
 	if err != nil {
 		// Нужно проверить на NoRows
