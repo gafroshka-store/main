@@ -32,10 +32,13 @@ CREATE TABLE announcement (
                               name VARCHAR(100) NOT NULL,
                               description TEXT,
                               user_seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                              price DECIMAL NOT NULL,
-                              category INTEGER,
+                              price DECIMAL NOT NULL CHECK (price >= 0),
+                              category INTEGER CHECK (discount BETWEEN 0 AND 100),
                               discount SMALLINT DEFAULT 0 NOT NULL,
-                              is_active BOOLEAN DEFAULT TRUE NOT NULL
+                              is_active BOOLEAN DEFAULT TRUE NOT NULL,
+                              rating FLOAT DEFAULT 0.0,
+                              rating_count INTEGER DEFAULT 0,
+                              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE announcement_feedback (
