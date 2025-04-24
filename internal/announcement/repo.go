@@ -67,7 +67,7 @@ func (ar *AnnouncementDBRepository) Create(a types.CreateAnnouncement) (*Announc
 	return &newAnn, nil
 }
 
-func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]*Announcement, error) {
+func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]Announcement, error) {
 	query := `
 	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
 	FROM announcement 
@@ -83,7 +83,7 @@ func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]*Announcement, error) 
 	}
 	defer rows.Close()
 
-	var announcements []*Announcement
+	var announcements []Announcement
 	for rows.Next() {
 		var a Announcement
 		err := rows.Scan(
@@ -102,13 +102,13 @@ func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]*Announcement, error) 
 		if err != nil {
 			return nil, errors.ErrDBInternal
 		}
-		announcements = append(announcements, &a)
+		announcements = append(announcements, a)
 	}
 
 	return announcements, nil
 }
 
-func (ar *AnnouncementDBRepository) Search(query string) ([]*Announcement, error) {
+func (ar *AnnouncementDBRepository) Search(query string) ([]Announcement, error) {
 	query = strings.ToLower(query)
 	sqlQuery := `
 	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at, 
@@ -126,7 +126,7 @@ func (ar *AnnouncementDBRepository) Search(query string) ([]*Announcement, error
 	}
 	defer rows.Close()
 
-	var announcements []*Announcement
+	var announcements []Announcement
 	for rows.Next() {
 		var a Announcement
 		var score int
@@ -147,7 +147,7 @@ func (ar *AnnouncementDBRepository) Search(query string) ([]*Announcement, error
 		if err != nil {
 			return nil, errors.ErrDBInternal
 		}
-		announcements = append(announcements, &a)
+		announcements = append(announcements, a)
 	}
 
 	return announcements, nil

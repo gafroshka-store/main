@@ -125,7 +125,7 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 		name        string
 		limit       int
 		mock        func()
-		expected    []*Announcement
+		expected    []Announcement
 		expectError error
 	}{
 		{
@@ -156,7 +156,7 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 							4.0, 5, now,
 						))
 			},
-			expected: []*Announcement{
+			expected: []Announcement{
 				{
 					ID:           "1",
 					Name:         "Item 1",
@@ -212,7 +212,7 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 		name        string
 		query       string
 		mock        func()
-		expected    []*Announcement
+		expected    []Announcement
 		expectError error
 	}{
 		{
@@ -243,7 +243,7 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 							4.0, 5, now, 2,
 						))
 			},
-			expected: []*Announcement{
+			expected: []Announcement{
 				{
 					ID:           "1",
 					Name:         "Test item",
@@ -291,7 +291,7 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 						"rating", "rating_count", "created_at", "score",
 					}))
 			},
-			expected:    []*Announcement{},
+			expected:    []Announcement{},
 			expectError: nil,
 		},
 		{
@@ -317,7 +317,7 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 							4.8, 3, now, 1,
 						))
 			},
-			expected: []*Announcement{
+			expected: []Announcement{
 				{
 					ID:           "3",
 					Name:         "TEST",
@@ -352,7 +352,7 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 						"rating", "rating_count", "created_at", "score",
 					}))
 			},
-			expected:    []*Announcement{},
+			expected:    []Announcement{},
 			expectError: nil,
 		},
 		{
@@ -409,10 +409,10 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
                 `)).WithArgs("limit").
 					WillReturnRows(rows)
 			},
-			expected: func() []*Announcement {
-				announcements := make([]*Announcement, 10)
+			expected: func() []Announcement {
+				announcements := make([]Announcement, 10)
 				for i := range announcements {
-					announcements[i] = &Announcement{
+					announcements[i] = Announcement{
 						ID:           fmt.Sprintf("%d", i),
 						Name:         "Item",
 						Description:  "Desc",

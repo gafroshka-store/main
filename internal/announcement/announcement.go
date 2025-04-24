@@ -22,8 +22,8 @@ type Announcement struct {
 
 type AnnouncementRepo interface {
 	Create(a types.CreateAnnouncement) (*Announcement, error)
-	GetTopN(limit int) ([]*Announcement, error)
-	Search(query string) ([]*Announcement, error)
+	GetTopN(limit int) ([]Announcement, error)
+	Search(query string) ([]Announcement, error)
 	GetByID(id string) (*Announcement, error)
 	UpdateRating(id string, rate int) (*Announcement, error)
 }
