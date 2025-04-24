@@ -22,7 +22,7 @@ func NewAnnouncementDBRepository(db *sql.DB, l *zap.SugaredLogger) *Announcement
 	}
 }
 
-func (ar *AnnouncementDBRepository) Create(a types.CreateAnnouncement) (Announcement, error) {
+func (ar *AnnouncementDBRepository) Create(a types.CreateAnnouncement) (*Announcement, error) {
 	var newAnn Announcement
 
 	query := `
@@ -34,7 +34,7 @@ func (ar *AnnouncementDBRepository) Create(a types.CreateAnnouncement) (Announce
 		category, 
 		discount
 	) VALUES ($1, $2, $3, $4, $5, $6)
-	RETURNING *
+	RETURNING id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at
 	`
 
 	err := ar.DB.QueryRow(
@@ -61,15 +61,15 @@ func (ar *AnnouncementDBRepository) Create(a types.CreateAnnouncement) (Announce
 
 	if err != nil {
 		ar.Logger.Errorf("Error creating announcement: %v", err)
-		return Announcement{}, errors.ErrDBInternal
+		return nil, errors.ErrDBInternal
 	}
 
-	return newAnn, nil
+	return &newAnn, nil
 }
 
-func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]Announcement, error) {
+func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]*Announcement, error) {
 	query := `
-	SELECT * 
+	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
 	FROM announcement 
 	WHERE is_active = TRUE 
 	ORDER BY rating DESC 
@@ -83,7 +83,7 @@ func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]Announcement, error) {
 	}
 	defer rows.Close()
 
-	var announcements []Announcement
+	var announcements []*Announcement
 	for rows.Next() {
 		var a Announcement
 		err := rows.Scan(
@@ -102,18 +102,17 @@ func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]Announcement, error) {
 		if err != nil {
 			return nil, errors.ErrDBInternal
 		}
-		announcements = append(announcements, a)
+		announcements = append(announcements, &a)
 	}
 
 	return announcements, nil
 }
 
-func (ar *AnnouncementDBRepository) Search(query string) ([]Announcement, error) {
+func (ar *AnnouncementDBRepository) Search(query string) ([]*Announcement, error) {
 	query = strings.ToLower(query)
 	sqlQuery := `
-	SELECT *, 
-		(LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, '')))
-		AS score
+	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at, 
+		(LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
 	FROM announcement 
 	WHERE is_active = TRUE
 	ORDER BY score DESC 
@@ -127,7 +126,7 @@ func (ar *AnnouncementDBRepository) Search(query string) ([]Announcement, error)
 	}
 	defer rows.Close()
 
-	var announcements []Announcement
+	var announcements []*Announcement
 	for rows.Next() {
 		var a Announcement
 		var score int
@@ -148,17 +147,17 @@ func (ar *AnnouncementDBRepository) Search(query string) ([]Announcement, error)
 		if err != nil {
 			return nil, errors.ErrDBInternal
 		}
-		announcements = append(announcements, a)
+		announcements = append(announcements, &a)
 	}
 
 	return announcements, nil
 }
 
-func (ar *AnnouncementDBRepository) GetByID(id string) (Announcement, error) {
+func (ar *AnnouncementDBRepository) GetByID(id string) (*Announcement, error) {
 	var a Announcement
 
 	query := `
-	SELECT * 
+	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
 	FROM announcement 
 	WHERE id = $1
 	`
@@ -179,19 +178,19 @@ func (ar *AnnouncementDBRepository) GetByID(id string) (Announcement, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return Announcement{}, errors.ErrNotFound
+			return nil, errors.ErrNotFound
 		}
 		ar.Logger.Errorf("Error getting announcement by ID: %v", err)
-		return Announcement{}, errors.ErrDBInternal
+		return nil, errors.ErrDBInternal
 	}
 
-	return a, nil
+	return &a, nil
 }
 
-func (ar *AnnouncementDBRepository) UpdateRating(id string, rate int) error {
+func (ar *AnnouncementDBRepository) UpdateRating(id string, rate int) (*Announcement, error) {
 	tx, err := ar.DB.Begin()
 	if err != nil {
-		return errors.ErrDBInternal
+		return nil, errors.ErrDBInternal
 	}
 	defer tx.Rollback()
 
@@ -204,7 +203,7 @@ func (ar *AnnouncementDBRepository) UpdateRating(id string, rate int) error {
 	).Scan(&currentRating, &ratingCount)
 
 	if err != nil {
-		return errors.ErrDBInternal
+		return nil, errors.ErrDBInternal
 	}
 
 	newRating := float64(rate)
@@ -219,8 +218,34 @@ func (ar *AnnouncementDBRepository) UpdateRating(id string, rate int) error {
 	)
 
 	if err != nil {
-		return errors.ErrDBInternal
+		return nil, errors.ErrDBInternal
 	}
 
-	return tx.Commit()
+	var updated Announcement
+	err = tx.QueryRow(`
+		SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
+		FROM announcement 
+		WHERE id = $1
+	`, id).Scan(
+		&updated.ID,
+		&updated.Name,
+		&updated.Description,
+		&updated.UserSellerID,
+		&updated.Price,
+		&updated.Category,
+		&updated.Discount,
+		&updated.IsActive,
+		&updated.Rating,
+		&updated.RatingCount,
+		&updated.CreatedAt,
+	)
+	if err != nil {
+		return nil, errors.ErrDBInternal
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, errors.ErrDBInternal
+	}
+
+	return &updated, nil
 }

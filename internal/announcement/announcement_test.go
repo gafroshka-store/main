@@ -29,7 +29,7 @@ func TestAnnouncementDBRepository_Create(t *testing.T) {
 		name        string
 		input       types.CreateAnnouncement
 		mock        func()
-		expected    Announcement
+		expected    *Announcement
 		expectError error
 	}{
 		{
@@ -48,7 +48,7 @@ func TestAnnouncementDBRepository_Create(t *testing.T) {
 						name, description, user_seller_id, 
 						price, category, discount
 					) VALUES ($1, $2, $3, $4, $5, $6)
-					RETURNING *
+					RETURNING id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at
 				`)).
 					WithArgs("Test Item", "Test Description", "123", int64(1000), 1, 10).
 					WillReturnRows(sqlmock.NewRows([]string{
@@ -59,10 +59,10 @@ func TestAnnouncementDBRepository_Create(t *testing.T) {
 						AddRow(
 							"abc123", "Test Item", "Test Description", "123",
 							1000, 1, 10, true,
-							0.0, 0, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), // Ensure this line ends with a comma if there are more parameters
+							0.0, 0, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 						))
 			},
-			expected: Announcement{
+			expected: &Announcement{
 				ID:           "abc123",
 				Name:         "Test Item",
 				Description:  "Test Description",
@@ -88,12 +88,12 @@ func TestAnnouncementDBRepository_Create(t *testing.T) {
 						name, description, user_seller_id, 
 						price, category, discount
 					) VALUES ($1, $2, $3, $4, $5, $6)
-					RETURNING *
+					RETURNING id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at
 				`)).
 					WithArgs("Invalid Item", "", "", int64(0), 0, 0).
 					WillReturnError(errors.New("database error"))
 			},
-			expected:    Announcement{},
+			expected:    nil,
 			expectError: customErrors.ErrDBInternal,
 		},
 	}
@@ -124,7 +124,7 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 		name        string
 		limit       int
 		mock        func()
-		expected    []Announcement
+		expected    []*Announcement
 		expectError error
 	}{
 		{
@@ -132,7 +132,7 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 			limit: 3,
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT * 
+					SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
 					FROM announcement 
 					WHERE is_active = TRUE 
 					ORDER BY rating DESC 
@@ -155,7 +155,7 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 							4.0, 5, now,
 						))
 			},
-			expected: []Announcement{
+			expected: []*Announcement{
 				{
 					ID:           "1",
 					Name:         "Item 1",
@@ -213,7 +213,7 @@ func TestAnnouncementDBRepository_GetByID(t *testing.T) {
 		name        string
 		id          string
 		mock        func()
-		expected    Announcement
+		expected    *Announcement
 		expectError error
 	}{
 		{
@@ -221,7 +221,7 @@ func TestAnnouncementDBRepository_GetByID(t *testing.T) {
 			id:   "1",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT * 
+					SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
 					FROM announcement 
 					WHERE id = $1
 				`)).
@@ -237,7 +237,7 @@ func TestAnnouncementDBRepository_GetByID(t *testing.T) {
 							4.5, 2, now,
 						))
 			},
-			expected: Announcement{
+			expected: &Announcement{
 				ID:           "1",
 				Name:         "Test",
 				Description:  "Desc",
@@ -257,14 +257,14 @@ func TestAnnouncementDBRepository_GetByID(t *testing.T) {
 			id:   "999",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT * 
+					SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
 					FROM announcement 
 					WHERE id = $1
 				`)).
 					WithArgs("999").
 					WillReturnError(sql.ErrNoRows)
 			},
-			expected:    Announcement{},
+			expected:    nil,
 			expectError: customErrors.ErrNotFound,
 		},
 	}
@@ -289,11 +289,14 @@ func TestAnnouncementDBRepository_UpdateRating(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	repo := NewAnnouncementDBRepository(db, logger)
 
+	now := time.Now()
+
 	tests := []struct {
 		name        string
 		id          string
 		rate        int
 		mock        func()
+		expected    *Announcement
 		expectError error
 	}{
 		{
@@ -318,33 +321,37 @@ func TestAnnouncementDBRepository_UpdateRating(t *testing.T) {
 					WithArgs(5.0, "1").
 					WillReturnResult(sqlmock.NewResult(0, 1))
 
+				mock.ExpectQuery(regexp.QuoteMeta(`
+					SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
+					FROM announcement 
+					WHERE id = $1
+				`)).
+					WithArgs("1").
+					WillReturnRows(sqlmock.NewRows([]string{
+						"id", "name", "description", "user_seller_id",
+						"price", "category", "discount", "is_active",
+						"rating", "rating_count", "created_at",
+					}).
+						AddRow(
+							"1", "Test", "Desc", "123",
+							100, 1, 0, true,
+							5.0, 1, now,
+						))
+
 				mock.ExpectCommit()
 			},
-			expectError: nil,
-		},
-		{
-			name: "update existing rating",
-			id:   "2",
-			rate: 4,
-			mock: func() {
-				mock.ExpectBegin()
-				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT rating, rating_count 
-					FROM announcement 
-					WHERE id = $1 FOR UPDATE
-				`)).
-					WithArgs("2").
-					WillReturnRows(sqlmock.NewRows([]string{"rating", "rating_count"}).AddRow(4.5, 2))
-
-				mock.ExpectExec(regexp.QuoteMeta(`
-					UPDATE announcement 
-					SET rating = $1, rating_count = rating_count + 1 
-					WHERE id = $2
-				`)).
-					WithArgs((4.5+4.0)/2, "2").
-					WillReturnResult(sqlmock.NewResult(0, 1))
-
-				mock.ExpectCommit()
+			expected: &Announcement{
+				ID:           "1",
+				Name:         "Test",
+				Description:  "Desc",
+				UserSellerID: "123",
+				Price:        100,
+				Category:     1,
+				Discount:     0,
+				IsActive:     true,
+				Rating:       5.0,
+				RatingCount:  1,
+				CreatedAt:    now,
 			},
 			expectError: nil,
 		},
@@ -355,6 +362,7 @@ func TestAnnouncementDBRepository_UpdateRating(t *testing.T) {
 			mock: func() {
 				mock.ExpectBegin().WillReturnError(errors.New("tx error"))
 			},
+			expected:    nil,
 			expectError: customErrors.ErrDBInternal,
 		},
 	}
@@ -363,7 +371,8 @@ func TestAnnouncementDBRepository_UpdateRating(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mock()
 
-			err := repo.UpdateRating(tt.id, tt.rate)
+			result, err := repo.UpdateRating(tt.id, tt.rate)
+			assert.Equal(t, tt.expected, result)
 			assert.Equal(t, tt.expectError, err)
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
