@@ -6,9 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/announcement/announcement.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/announcement.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/announcement/announcement_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/announcement_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/announcement/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/repo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/types/announcement/announcement.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/announcement/announcement.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,6 +28,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Go Test.TestAnnouncementDBRepository_Search/result_limit_enforcement in gafroshka-main/internal/announcement.executor&quot;: &quot;Run&quot;,
     &quot;Go Test.go test gafroshka-main/internal/announcement.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
@@ -49,7 +49,19 @@
       <recent name="$PROJECT_DIR$/db" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Go Test.go test gafroshka-main/internal/announcement">
+    <configuration name="TestAnnouncementDBRepository_Search/result_limit_enforcement in gafroshka-main/internal/announcement" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/announcement" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/announcement" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAnnouncementDBRepository_Search\E$/^\Qresult_limit_enforcement\E$" />
+      <method v="2" />
+    </configuration>
     <configuration name="go test gafroshka-main/internal/announcement" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="main" />
       <working_directory value="$PROJECT_DIR$/internal/announcement" />
@@ -64,6 +76,7 @@
     <recent_temporary>
       <list>
         <item itemvalue="Go Test.go test gafroshka-main/internal/announcement" />
+        <item itemvalue="Go Test.TestAnnouncementDBRepository_Search/result_limit_enforcement in gafroshka-main/internal/announcement" />
       </list>
     </recent_temporary>
   </component>
