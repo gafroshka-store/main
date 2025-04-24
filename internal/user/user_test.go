@@ -36,36 +36,39 @@ func TestUserDBRepository_Info(t *testing.T) {
 			name:   "valid user",
 			userID: "123",
 			mockQuery: func() {
-				mock.ExpectQuery(`
-				SELECT user_id, 
-					name,
-					surname,
-					registration_data,
-					email,
-					phone_number,
-					balance,
-					deals_count 
-		   		FROM users WHERE user_id = \$1
-				`).
+				mock.ExpectQuery(`SELECT 
+				user_id, name, 
+				surname, day_of_birth, 
+				sex, registration_data, 
+				email, phone_number, 
+				balance, deals_count, 
+				rating, rating_count 
+				FROM users 
+				WHERE user_id = \$1`).
 					WithArgs("123").
 					WillReturnRows(sqlmock.NewRows([]string{
-						"user_id", "name", "surname", "registration_data",
-						"email", "phone_number", "balance", "deals_count",
+						"user_id", "name", "surname", "day_of_birth", "sex", "registration_data",
+						"email", "phone_number", "balance", "deals_count", "rating", "rating_count",
 					}).AddRow(
-						"123", "John", "Doe",
-						time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
-						"john@example.com", "1234567890", 100.0, 5,
+						"123", "John", "Doe", time.Time{},
+						SEX_MAN_T, time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
+						"john@example.com", "1234567890", 100.0, 5, 4.0, 2,
 					))
+
 			},
 			expected: User{
 				ID:               "123",
 				Name:             "John",
 				Surname:          "Doe",
+				DayOfBirth:       time.Time{},
+				Sex:              SEX_MAN_T,
 				RegistrationDate: time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 				Email:            "john@example.com",
 				PhoneNumber:      "1234567890",
 				Balance:          100.0,
 				DealsCount:       5,
+				Rating:           4.0,
+				RatingCount:      2,
 			},
 			expectError: nil,
 		},
@@ -77,11 +80,15 @@ func TestUserDBRepository_Info(t *testing.T) {
 				SELECT user_id, 
 					name,
 					surname,
+					day_of_birth,
+					sex,
 					registration_data,
 					email,
 					phone_number,
 					balance,
-					deals_count 
+					deals_count,
+					rating,
+					rating_count
 		   		FROM users WHERE user_id = \$1`).
 					WithArgs("999").
 					WillReturnError(sql.ErrNoRows)
@@ -131,26 +138,44 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 					WithArgs("Alice", "alice@example.com", "123").
 					WillReturnResult(sqlmock.NewResult(0, 1))
 
-				mock.ExpectQuery(`SELECT user_id,.*FROM users WHERE user_id = \$1`).
+				mock.ExpectQuery(`SELECT user_id, 
+					name, 
+					surname, 
+					day_of_birth, 
+					sex, 
+					registration_data, 
+					email, 
+					phone_number, 
+					balance, 
+					deals_count, 
+					rating, 
+					rating_count 
+				FROM users 
+				WHERE user_id = \$1`).
 					WithArgs("123").
 					WillReturnRows(sqlmock.NewRows([]string{
-						"user_id", "name", "surname", "registration_data",
-						"email", "phone_number", "balance", "deals_count",
+						"user_id", "name", "surname", "day_of_birth", "sex", "registration_data",
+						"email", "phone_number", "balance", "deals_count", "rating", "rating_count",
 					}).AddRow(
-						"123", "Alice", "Doe",
-						time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
-						"alice@example.com", "1234567890", 100.0, 5,
+						"123", "Alice", "Doe", time.Time{},
+						SEX_WOMEN_T, time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
+						"alice@example.com", "1234567890", 100.0, 5, 0.0, 0,
 					))
+
 			},
 			expectedResult: User{
 				ID:               "123",
 				Name:             "Alice",
 				Surname:          "Doe",
+				DayOfBirth:       time.Time{},
+				Sex:              SEX_WOMEN_T,
 				RegistrationDate: time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 				Email:            "alice@example.com",
 				PhoneNumber:      "1234567890",
 				Balance:          100.0,
 				DealsCount:       5,
+				Rating:           0,
+				RatingCount:      0,
 			},
 			expectError: nil,
 		},
@@ -162,23 +187,27 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 				mock.ExpectQuery(`SELECT user_id,.*FROM users WHERE user_id = \$1`).
 					WithArgs("123").
 					WillReturnRows(sqlmock.NewRows([]string{
-						"user_id", "name", "surname", "registration_data",
-						"email", "phone_number", "balance", "deals_count",
+						"user_id", "name", "surname", "day_of_birth", "sex", "registration_data",
+						"email", "phone_number", "balance", "deals_count", "rating", "rating_count",
 					}).AddRow(
-						"123", "John", "Doe",
+						"123", "John", "Doe", time.Time{}, SEX_MAN_T,
 						time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
-						"john@example.com", "1234567890", 100.0, 5,
+						"john@example.com", "1234567890", 100.0, 5, 0, 0,
 					))
 			},
 			expectedResult: User{
 				ID:               "123",
 				Name:             "John",
 				Surname:          "Doe",
+				DayOfBirth:       time.Time{},
+				Sex:              SEX_MAN_T,
 				RegistrationDate: time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 				Email:            "john@example.com",
 				PhoneNumber:      "1234567890",
 				Balance:          100.0,
 				DealsCount:       5,
+				Rating:           0,
+				RatingCount:      0,
 			},
 			expectError: nil,
 		},
