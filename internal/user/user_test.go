@@ -51,7 +51,7 @@ func TestUserDBRepository_Info(t *testing.T) {
 						"email", "phone_number", "balance", "deals_count", "rating", "rating_count",
 					}).AddRow(
 						"123", "John", "Doe", time.Time{},
-						SEX_MAN_T, time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
+						SexManT, time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 						"john@example.com", "1234567890", 100.0, 5, 4.0, 2,
 					))
 
@@ -61,7 +61,7 @@ func TestUserDBRepository_Info(t *testing.T) {
 				Name:             "John",
 				Surname:          "Doe",
 				DayOfBirth:       time.Time{},
-				Sex:              SEX_MAN_T,
+				Sex:              SexManT,
 				RegistrationDate: time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 				Email:            "john@example.com",
 				PhoneNumber:      "1234567890",
@@ -158,7 +158,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 						"email", "phone_number", "balance", "deals_count", "rating", "rating_count",
 					}).AddRow(
 						"123", "Alice", "Doe", time.Time{},
-						SEX_WOMEN_T, time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
+						SexWomenT, time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 						"alice@example.com", "1234567890", 100.0, 5, 0.0, 0,
 					))
 
@@ -168,7 +168,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 				Name:             "Alice",
 				Surname:          "Doe",
 				DayOfBirth:       time.Time{},
-				Sex:              SEX_WOMEN_T,
+				Sex:              SexWomenT,
 				RegistrationDate: time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 				Email:            "alice@example.com",
 				PhoneNumber:      "1234567890",
@@ -190,7 +190,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 						"user_id", "name", "surname", "day_of_birth", "sex", "registration_data",
 						"email", "phone_number", "balance", "deals_count", "rating", "rating_count",
 					}).AddRow(
-						"123", "John", "Doe", time.Time{}, SEX_MAN_T,
+						"123", "John", "Doe", time.Time{}, SexManT,
 						time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 						"john@example.com", "1234567890", 100.0, 5, 0, 0,
 					))
@@ -200,7 +200,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 				Name:             "John",
 				Surname:          "Doe",
 				DayOfBirth:       time.Time{},
-				Sex:              SEX_MAN_T,
+				Sex:              SexManT,
 				RegistrationDate: time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC),
 				Email:            "john@example.com",
 				PhoneNumber:      "1234567890",

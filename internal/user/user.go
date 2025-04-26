@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	SEX_MAN_T   = true
-	SEX_WOMEN_T = false
+	SexManT   = true
+	SexWomenT = false
 )
 
 // User структура пользователя

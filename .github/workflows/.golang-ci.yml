@@ -21,12 +21,12 @@ jobs:
 
       - name: Install golangci-lint
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.57.2
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.1.5
+          golangci-lint --version
 
-      - name: Run linter
-        run: |
-          $(go env GOPATH)/bin/golangci-lint run --config .golint.yaml --timeout 5m --skip-dirs /opt/hostedtoolcache/go/
-
+      - name: Run golangci-lint
+        run: golangci-lint run --timeout 5m
+        
   build:
     name: Build
     runs-on: ubuntu-latest
