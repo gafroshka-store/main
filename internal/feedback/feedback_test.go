@@ -35,21 +35,23 @@ func TestCreateFeedback(t *testing.T) {
 		Rating:         5,
 	}
 
-	rows := sqlmock.NewRows([]string{"id", "announcement_recipient_id", "user_writer_id", "comment", "rating"}).
-		AddRow("10", testFeedback.AnnouncementID, testFeedback.UserWriterID, testFeedback.Comment, testFeedback.Rating)
-
-	mock.ExpectQuery(regexp.QuoteMeta(`
-		INSERT INTO announcement_feedback (announcement_recipient_id, user_writer_id, comment, rating)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, announcement_recipient_id, user_writer_id, comment, rating
+	mock.ExpectExec(regexp.QuoteMeta(`
+		INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
+		VALUES ($1, $2, $3, $4, $5)
 	`)).
-		WithArgs(testFeedback.AnnouncementID, testFeedback.UserWriterID, testFeedback.Comment, testFeedback.Rating).
-		WillReturnRows(rows)
+		WithArgs(sqlmock.AnyArg(), // ID генерируется автоматически
+			testFeedback.AnnouncementID,
+			testFeedback.UserWriterID,
+			testFeedback.Comment,
+			testFeedback.Rating).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	created, err := repo.Create(testFeedback)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "10", created.ID)
+	assert.NotNil(t, created)
+	assert.NotEmpty(t, created.ID)
+
 	assert.Equal(t, testFeedback.AnnouncementID, created.AnnouncementID)
 	assert.Equal(t, testFeedback.UserWriterID, created.UserWriterID)
 	assert.Equal(t, testFeedback.Comment, created.Comment)

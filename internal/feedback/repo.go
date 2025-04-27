@@ -5,6 +5,7 @@ import (
 	"gafroshka-main/internal/types/errors"
 	"gafroshka-main/internal/types/feedback"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -20,33 +21,26 @@ func NewFeedbackDBRepository(db *sql.DB, l *zap.SugaredLogger) *FeedbackDBReposi
 	}
 }
 
-func (fr *FeedbackDBRepository) Create(f feedback.Feedback) (feedback.Feedback, error) {
+func (fr *FeedbackDBRepository) Create(f feedback.Feedback) (*feedback.Feedback, error) {
+	f.ID = uuid.New().String()
 	query := `
-		INSERT INTO announcement_feedback (announcement_recipient_id, user_writer_id, comment, rating)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, announcement_recipient_id, user_writer_id, comment, rating
-	`
-
-	var fb feedback.Feedback
-	err := fr.DB.QueryRow(
+        INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
+        VALUES ($1, $2, $3, $4, $5)
+    `
+	_, err := fr.DB.Exec(
 		query,
+		f.ID,
 		f.AnnouncementID,
 		f.UserWriterID,
 		f.Comment,
 		f.Rating,
-	).Scan(
-		&fb.ID,
-		&fb.AnnouncementID,
-		&fb.UserWriterID,
-		&fb.Comment,
-		&fb.Rating,
 	)
 	if err != nil {
 		fr.Logger.Warnf("Ошибка при создании отзыва: %v", err)
-		return feedback.Feedback{}, errors.ErrDBInternal
+		return nil, errors.ErrDBInternal
 	}
 
-	return fb, nil
+	return &f, nil
 }
 
 func (fr *FeedbackDBRepository) Delete(feedbackID string) error {
