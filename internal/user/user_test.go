@@ -23,13 +23,13 @@ func TestUserDBRepository_Info(t *testing.T) {
 	defer db.Close()
 
 	logger := zaptest.NewLogger(t).Sugar()
-	repository := NewUserDBRepository(db, logger, nil)
+	repository := NewUserDBRepository(db, logger)
 
 	tests := []struct {
 		name        string
 		userID      string
 		mockQuery   func()
-		expected    User
+		expected    *User
 		expectError error
 	}{
 		{
@@ -56,7 +56,7 @@ func TestUserDBRepository_Info(t *testing.T) {
 					))
 
 			},
-			expected: User{
+			expected: &User{
 				ID:               "123",
 				Name:             "John",
 				Surname:          "Doe",
@@ -93,8 +93,8 @@ func TestUserDBRepository_Info(t *testing.T) {
 					WithArgs("999").
 					WillReturnError(sql.ErrNoRows)
 			},
-			expected:    User{},
-			expectError: customErrors.ErrDBInternal,
+			expected:    nil,
+			expectError: customErrors.ErrNotFound,
 		},
 	}
 
@@ -116,14 +116,14 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 	defer db.Close()
 
 	logger := zaptest.NewLogger(t).Sugar()
-	repository := NewUserDBRepository(db, logger, nil)
+	repository := NewUserDBRepository(db, logger)
 
 	tests := []struct {
 		name           string
 		userID         string
 		update         types.ChangeUser
 		mockQuery      func()
-		expectedResult User
+		expectedResult *User
 		expectError    error
 	}{
 		{
@@ -163,7 +163,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 					))
 
 			},
-			expectedResult: User{
+			expectedResult: &User{
 				ID:               "123",
 				Name:             "Alice",
 				Surname:          "Doe",
@@ -195,7 +195,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 						"john@example.com", "1234567890", 100.0, 5, 0, 0,
 					))
 			},
-			expectedResult: User{
+			expectedResult: &User{
 				ID:               "123",
 				Name:             "John",
 				Surname:          "Doe",
@@ -222,7 +222,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 					WithArgs("Alice", "123").
 					WillReturnError(errors.New("db failure"))
 			},
-			expectedResult: User{},
+			expectedResult: nil,
 			expectError:    customErrors.ErrDBInternal,
 		},
 	}

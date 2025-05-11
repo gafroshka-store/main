@@ -28,11 +28,12 @@ type User struct {
 }
 
 // UserRepo интерфейс удовлетворяющий методам сущности пользователя
+// mockgen -source=internal/user/user.go -destination=internal/mocks/mock_user_repo.go -package=mocks
 type UserRepo interface {
 	// Authorize регистрирует/авторизует пользователя пользователя
-	Authorize(login, password string) (User, error)
+	Authorize(login, password string) (*User, error)
 	// Info возвращает информацию о пользователи
-	Info(userID string) (User, error)
+	Info(userID string) (*User, error)
 	// ChangeProfile меняет поля пользователя с userID по updateUser
-	ChangeProfile(userID string, updateUser types.ChangeUser) (User, error)
+	ChangeProfile(userID string, updateUser types.ChangeUser) (*User, error)
 }

@@ -192,7 +192,7 @@ func (ar *AnnouncementDBRepository) UpdateRating(id string, rate int) (*Announce
 	if err != nil {
 		return nil, errors.ErrDBInternal
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint:errcheck
 
 	var currentRating float64
 	var ratingCount int

@@ -49,7 +49,14 @@ func TestAnnouncementDBRepository_Create(t *testing.T) {
 						name, description, user_seller_id, 
 						price, category, discount
 					) VALUES ($1, $2, $3, $4, $5, $6)
-					RETURNING id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at
+					RETURNING id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, category, 
+					discount, 
+					is_active, 
+					rating, rating_count, created_at
 				`)).
 					WithArgs("Test Item", "Test Description", "123", int64(1000), 1, 10).
 					WillReturnRows(sqlmock.NewRows([]string{
@@ -89,8 +96,14 @@ func TestAnnouncementDBRepository_Create(t *testing.T) {
 						name, description, user_seller_id, 
 						price, category, discount
 					) VALUES ($1, $2, $3, $4, $5, $6)
-					RETURNING id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at
-				`)).
+					RETURNING id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, category, 
+					discount, 
+					is_active, 
+					rating, rating_count, created_at				`)).
 					WithArgs("Invalid Item", "", "", int64(0), 0, 0).
 					WillReturnError(errors.New("database error"))
 			},
@@ -133,7 +146,15 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 			limit: 3,
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
+					SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					
+					category, 
+					discount, 
+					is_active, rating, rating_count, created_at 
 					FROM announcement 
 					WHERE is_active = TRUE 
 					ORDER BY rating DESC 
@@ -220,7 +241,12 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 			query: "test",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at,
+                    SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, discount, is_active, rating, rating_count, created_at,
                         (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
                     FROM announcement 
                     WHERE is_active = TRUE
@@ -278,7 +304,13 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 			query: "test' OR 1=1--",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at,
+                    SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, 
+					discount, is_active, rating, rating_count, created_at,
                         (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
                     FROM announcement 
                     WHERE is_active = TRUE
@@ -299,7 +331,12 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 			query: "TEST",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at,
+                    SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, discount, is_active, rating, rating_count, created_at,
                         (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
                     FROM announcement 
                     WHERE is_active = TRUE
@@ -323,13 +360,14 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 					Name:         "TEST",
 					Description:  "UPPER CASE",
 					UserSellerID: "789",
-					Price:        3000,
-					Category:     3,
-					Discount:     10,
-					IsActive:     true,
-					Rating:       4.8,
-					RatingCount:  3,
-					CreatedAt:    now,
+
+					Price:       3000,
+					Category:    3,
+					Discount:    10,
+					IsActive:    true,
+					Rating:      4.8,
+					RatingCount: 3,
+					CreatedAt:   now,
 				},
 			},
 			expectError: nil,
@@ -339,7 +377,12 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 			query: "active",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at,
+                    SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, discount, is_active, rating, rating_count, created_at,
                         (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
                     FROM announcement 
                     WHERE is_active = TRUE
@@ -360,7 +403,12 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 			query: "invalid",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at,
+                    SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, discount, is_active, rating, rating_count, created_at,
                         (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
                     FROM announcement 
                     WHERE is_active = TRUE
@@ -400,7 +448,12 @@ func TestAnnouncementDBRepository_Search(t *testing.T) {
 					)
 				}
 				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at,
+                    SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, discount, is_active, rating, rating_count, created_at,
                         (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
                     FROM announcement 
                     WHERE is_active = TRUE
@@ -475,7 +528,14 @@ func TestAnnouncementDBRepository_GetByID(t *testing.T) {
 			id:   "1",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
+					SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, discount, 
+					is_active, 
+					rating, rating_count, created_at 
 					FROM announcement 
 					WHERE id = $1
 				`)).
@@ -511,7 +571,14 @@ func TestAnnouncementDBRepository_GetByID(t *testing.T) {
 			id:   "999",
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
+					SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, discount, 
+					is_active, 
+					rating, rating_count, created_at 
 					FROM announcement 
 					WHERE id = $1
 				`)).
@@ -576,7 +643,14 @@ func TestAnnouncementDBRepository_UpdateRating(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 1))
 
 				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
+					SELECT id, 
+					name, 
+					description, 
+					user_seller_id, 
+					price, 
+					category, discount, 
+					is_active, 
+					rating, rating_count, created_at 
 					FROM announcement 
 					WHERE id = $1
 				`)).

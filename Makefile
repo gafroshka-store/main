@@ -1,5 +1,4 @@
-# Все поднятия приложения, запуск тестов и тд - ЗДЕСЬ
-.PHONY: run stop stop-hard run-lint
+.PHONY: run stop stop-hard int
 
 # Запуск контейнеров через docker-compose
 run:
@@ -15,3 +14,7 @@ stop-hard:
 
 lint:
 	golangci-lint run --config .golint.yaml
+
+# Запуск всех юнит-тестов
+test:
+	go test -v ./...
