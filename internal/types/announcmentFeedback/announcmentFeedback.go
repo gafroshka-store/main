@@ -1,4 +1,4 @@
-package announcmentFeedback
+package announcmentfeedback
 
 type Feedback struct {
 	ID             string `json:"id"`

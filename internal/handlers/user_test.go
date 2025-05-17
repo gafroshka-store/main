@@ -137,7 +137,8 @@ func TestUserHandler_ChangeProfile(t *testing.T) {
 			if tt.name == "Invalid JSON" {
 				reqBody = strings.NewReader("{invalid-json}")
 			} else {
-				jsonBody, _ := json.Marshal(tt.body)
+				jsonBody, err := json.Marshal(tt.body)
+				assert.Equal(t, nil, err)
 				reqBody = bytes.NewReader(jsonBody)
 			}
 

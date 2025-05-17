@@ -1,8 +1,8 @@
-package announcmentFeedback
+package announcmentfeedback
 
 import (
 	"database/sql"
-	"gafroshka-main/internal/types/announcmentFeedback"
+	announcmentfeedback "gafroshka-main/internal/types/announcmentFeedback"
 	"gafroshka-main/internal/types/errors"
 
 	"github.com/google/uuid"
@@ -15,9 +15,9 @@ type FeedbackDBRepository struct {
 }
 
 type FeedbackRepo interface {
-	Create(feedback announcmentFeedback.Feedback) (announcmentFeedback.Feedback, error)
+	Create(feedback announcmentfeedback.Feedback) (announcmentfeedback.Feedback, error)
 	Delete(feedbackID string) error
-	GetByAnnouncementID(announcementID string) ([]announcmentFeedback.Feedback, error)
+	GetByAnnouncementID(announcementID string) ([]announcmentfeedback.Feedback, error)
 }
 
 func NewFeedbackDBRepository(db *sql.DB, l *zap.SugaredLogger) *FeedbackDBRepository {
@@ -27,7 +27,7 @@ func NewFeedbackDBRepository(db *sql.DB, l *zap.SugaredLogger) *FeedbackDBReposi
 	}
 }
 
-func (fr *FeedbackDBRepository) Create(f announcmentFeedback.Feedback) (*announcmentFeedback.Feedback, error) {
+func (fr *FeedbackDBRepository) Create(f announcmentfeedback.Feedback) (*announcmentfeedback.Feedback, error) {
 	f.ID = uuid.New().String()
 	query := `
         INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
@@ -71,7 +71,7 @@ func (fr *FeedbackDBRepository) Delete(feedbackID string) error {
 	return nil
 }
 
-func (fr *FeedbackDBRepository) GetByAnnouncementID(announcementID string) ([]announcmentFeedback.Feedback, error) {
+func (fr *FeedbackDBRepository) GetByAnnouncementID(announcementID string) ([]announcmentfeedback.Feedback, error) {
 	query := `
 		SELECT id, announcement_recipient_id, user_writer_id, comment, rating
 		FROM announcement_feedback
@@ -85,9 +85,9 @@ func (fr *FeedbackDBRepository) GetByAnnouncementID(announcementID string) ([]an
 	}
 	defer rows.Close()
 
-	var feedbacks []announcmentFeedback.Feedback
+	var feedbacks []announcmentfeedback.Feedback
 	for rows.Next() {
-		var fb announcmentFeedback.Feedback
+		var fb announcmentfeedback.Feedback
 		err := rows.Scan(
 			&fb.ID,
 			&fb.AnnouncementID,

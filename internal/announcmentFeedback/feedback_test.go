@@ -1,10 +1,10 @@
-package announcmentFeedback
+package announcmentfeedback
 
 import (
 	"regexp"
 	"testing"
 
-	"gafroshka-main/internal/types/announcmentFeedback"
+	announcmentfeedback "gafroshka-main/internal/types/announcmentFeedback"
 	"gafroshka-main/internal/types/errors"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -28,7 +28,7 @@ func TestCreateFeedback(t *testing.T) {
 	repo, mock, teardown := setupTestRepo(t)
 	defer teardown()
 
-	testFeedback := announcmentFeedback.Feedback{
+	testFeedback := announcmentfeedback.Feedback{
 		AnnouncementID: "1",
 		UserWriterID:   "2",
 		Comment:        "Отличное объявление!",
