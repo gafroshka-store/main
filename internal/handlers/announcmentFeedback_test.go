@@ -39,7 +39,7 @@ func TestCreate_Success(t *testing.T) {
 		Rating:         5,
 	}
 	body, err := json.Marshal(input)
-	assert.Equal(t, nil, body)
+	assert.Equal(t, nil, err)
 
 	mockRepo.EXPECT().Create(input).Return(input, nil)
 
