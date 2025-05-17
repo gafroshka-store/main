@@ -38,7 +38,8 @@ func TestCreate_Success(t *testing.T) {
 		Comment:        "Nice!",
 		Rating:         5,
 	}
-	body, _ := json.Marshal(input)
+	body, err := json.Marshal(input)
+	assert.Equal(t, nil, body)
 
 	mockRepo.EXPECT().Create(input).Return(input, nil)
 
@@ -51,7 +52,7 @@ func TestCreate_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res.StatusCode)
 	var got announcmentfeedback.Feedback
-	err := json.NewDecoder(res.Body).Decode(&got)
+	err = json.NewDecoder(res.Body).Decode(&got)
 	assert.NoError(t, err)
 	assert.Equal(t, input, got)
 }
