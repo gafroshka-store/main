@@ -2,9 +2,9 @@ package user
 
 import (
 	"database/sql"
-	"gafroshka-main/internal/types/errors"
+	"errors"
+	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user"
-	wrappers "gafroshka-main/internal/wrappers/auth_wrappers"
 	"strconv"
 	"strings"
 
@@ -12,28 +12,22 @@ import (
 )
 
 type UserDBRepository struct {
-	DB          *sql.DB
-	Logger      *zap.SugaredLogger
-	AuthWrapper wrappers.AuthWrapperRepo
+	DB     *sql.DB
+	Logger *zap.SugaredLogger
 }
 
-func NewUserDBRepository(db *sql.DB, l *zap.SugaredLogger, aw wrappers.AuthWrapperRepo) *UserDBRepository {
+func NewUserDBRepository(db *sql.DB, l *zap.SugaredLogger) *UserDBRepository {
 	return &UserDBRepository{
-		DB:          db,
-		Logger:      l,
-		AuthWrapper: aw,
+		DB:     db,
+		Logger: l,
 	}
 }
 
-func (ur *UserDBRepository) Authorize(login, password string) (User, error) {
-	var u User
-
-	return u, nil
+func (ur *UserDBRepository) Authorize(login, password string) (*User, error) {
+	return nil, nil
 }
 
-func (ur *UserDBRepository) Info(userID string) (User, error) {
-	var u User
-
+func (ur *UserDBRepository) Info(userID string) (*User, error) {
 	query := `
 	SELECT user_id, 
 		   name,
@@ -50,7 +44,7 @@ func (ur *UserDBRepository) Info(userID string) (User, error) {
 	FROM users
 	WHERE user_id = $1
 	`
-
+	u := &User{}
 	err := ur.DB.QueryRow(query, userID).
 		Scan(
 			&u.ID, &u.Name, &u.Surname, &u.DayOfBirth,
@@ -59,15 +53,17 @@ func (ur *UserDBRepository) Info(userID string) (User, error) {
 			&u.Rating, &u.RatingCount,
 		)
 	if err != nil {
-		// Нужно проверить на NoRows
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, myErr.ErrNotFound
+		}
 		ur.Logger.Warnf("Ошибка при получения информации о пользователе: %v", err)
-		return u, errors.ErrDBInternal
+		return nil, myErr.ErrDBInternal
 	}
 
 	return u, nil
 }
 
-func (ur *UserDBRepository) ChangeProfile(userID string, updateUser types.ChangeUser) (User, error) {
+func (ur *UserDBRepository) ChangeProfile(userID string, updateUser types.ChangeUser) (*User, error) {
 	fields := []string{}
 	args := []interface{}{}
 	argID := 1
@@ -101,10 +97,20 @@ func (ur *UserDBRepository) ChangeProfile(userID string, updateUser types.Change
 	query := "UPDATE users SET " + strings.Join(fields, ", ") + " WHERE user_id = $" + strconv.Itoa(argID) // nolint:gosec
 	args = append(args, userID)
 
-	_, err := ur.DB.Exec(query, args...)
+	res, err := ur.DB.Exec(query, args...)
 	if err != nil {
 		ur.Logger.Warnf("Ошибка при обновлении профиля: %v", err)
-		return User{}, errors.ErrDBInternal
+		return nil, myErr.ErrDBInternal
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		ur.Logger.Warnf("Не удалось получить количество обновлённых строк: %v", err)
+		return nil, myErr.ErrDBInternal
+	}
+
+	if rowsAffected == 0 {
+		return nil, myErr.ErrNotFound
 	}
 
 	return ur.Info(userID) // Возвращаем обновлённые данные пользователя
