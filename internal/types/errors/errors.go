@@ -9,9 +9,10 @@ import (
 )
 
 var (
-	ErrDBInternal = errors.New("ошибка внутри базы")
-	ErrNotFound   = errors.New("запись не найдена ")
+	ErrDBInternal       = errors.New("ошибка внутри базы")
+	ErrNotFound         = errors.New("запись не найдена ")
 	ErrNotFoundFeedback = errors.New("отзыв с таким id не найден")
+	ErrInvalidRating    = errors.New("рейтинг должен быть от 1 до 5")
 )
 
 type ErrorServer struct {
