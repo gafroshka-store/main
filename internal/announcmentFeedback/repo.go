@@ -27,7 +27,7 @@ func NewFeedbackDBRepository(db *sql.DB, l *zap.SugaredLogger) *FeedbackDBReposi
 	}
 }
 
-func (fr *FeedbackDBRepository) Create(f announcmentfeedback.Feedback) (*announcmentfeedback.Feedback, error) {
+func (fr *FeedbackDBRepository) Create(f announcmentfeedback.Feedback) (announcmentfeedback.Feedback, error) {
 	f.ID = uuid.New().String()
 	query := `
         INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
@@ -43,10 +43,10 @@ func (fr *FeedbackDBRepository) Create(f announcmentfeedback.Feedback) (*announc
 	)
 	if err != nil {
 		fr.Logger.Warnf("Ошибка при создании отзыва: %v", err)
-		return nil, errors.ErrDBInternal
+		return announcmentfeedback.Feedback{}, errors.ErrDBInternal
 	}
 
-	return &f, nil
+	return f, nil
 }
 
 func (fr *FeedbackDBRepository) Delete(feedbackID string) error {

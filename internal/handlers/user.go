@@ -8,9 +8,10 @@ import (
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user"
 	"gafroshka-main/internal/user"
-	"github.com/google/uuid"
 	"net/http"
 	"net/mail"
+
+	"github.com/google/uuid"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -149,7 +150,7 @@ func (h *UserHandler) ChangeProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var updateData types.ChangeUser
-	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+	if err = json.NewDecoder(r.Body).Decode(&updateData); err != nil {
 		myErr.SendErrorTo(w, errors.New("invalid JSON payload"), http.StatusBadRequest, h.Logger)
 		return
 	}

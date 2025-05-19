@@ -3,14 +3,16 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	annfb "gafroshka-main/internal/announcmentFeedback"
 	"gafroshka-main/internal/app"
 	"gafroshka-main/internal/handlers"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
-	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -91,6 +93,17 @@ func main() {
 	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
 	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
 	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
+
+	feedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
+
+	feedbackHandlers := handlers.NewAnnouncementFeedbackHandler(logger, feedbackRepository)
+
+	// Ручки, требующие авторизации
+	authRouter.HandleFunc("/feedback", feedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/feedback/{id}", feedbackHandlers.Delete).Methods("DELETE")
+
+	// Ручки, НЕ требующие авторизации
+	noAuthRouter.HandleFunc("/feedback/announcement/{id}", feedbackHandlers.GetByAnnouncementID).Methods("GET")
 
 	logger.Infow("starting server",
 		"type", "START",
