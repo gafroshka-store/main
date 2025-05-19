@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/app"
-	"gafroshka-main/internal/handlers"
+	handlersUser "gafroshka-main/internal/handlers/user"
+	handlersUserFeedback "gafroshka-main/internal/handlers/userFeedback"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
+	"gafroshka-main/internal/userFeedback"
 	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
@@ -73,18 +75,25 @@ func main() {
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
+	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
 
 	// init router
 	r := mux.NewRouter()
 
 	// init handlers
-	userHandlers := handlers.NewUserHandler(logger, userRepository, sessionRepository)
+	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
+	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
 	authRouter.Use(middleware.Auth(sessionRepository))
 
 	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
+
+	authRouter.HandleFunc("/feedback", userFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
+	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
+
 	// Ручки НЕ требующие авторизации
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
 
@@ -92,7 +101,10 @@ func main() {
 	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
 	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
 
-	logger.Infow("starting server",
+	noAuthRouter.HandleFunc("/feedback/user/{user_id}", userFeedbackHandlers.GetByUserID).Methods("GET")
+
+	logger.Infow(
+		"starting server",
 		"type", "START",
 		"addr", c.ServerPort,
 	)

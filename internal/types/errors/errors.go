@@ -19,6 +19,13 @@ var (
 
 	ErrBadPassword = errors.New("bad password")
 	ErrBadID       = errors.New("bad id")
+
+	ErrNotFoundUserFeedback = errors.New("user feedback not found")
+	ErrRatingIsInvalid      = errors.New("rating must be between 1 and 5")
+	ErrCommentIsTooLong     = errors.New("comment must be less than 1000 characters")
+	ErrMissingFeedbackID    = errors.New("feedback id is missing")
+
+	ErrInvalidJSONPayload = errors.New("invalid JSON payload")
 )
 
 type ErrorServer struct {
