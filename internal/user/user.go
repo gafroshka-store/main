@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	SEX_MAN_T   = true
-	SEX_WOMEN_T = false
+	SexManT   = true
+	SexWomenT = false
 )
 
 // User структура пользователя
@@ -17,7 +17,7 @@ type User struct {
 	Surname          string    `json:"surname"`
 	DayOfBirth       time.Time `json:"day_of_birth"`
 	Sex              bool      `json:"sex"`
-	RegistrationDate time.Time `json:"registration_data"`
+	RegistrationDate time.Time `json:"registration_date"`
 	Email            string    `json:"email"`
 	PhoneNumber      string    `json:"phone_number"`
 	PasswordHash     string    `json:"password_hash"`
@@ -28,10 +28,13 @@ type User struct {
 }
 
 // UserRepo интерфейс удовлетворяющий методам сущности пользователя
-// mockgen -source=internal/user/user.go -destination=internal/mocks/mock_user_repo.go -package=mocks
+//
+//go:generate mockgen -source=internal/user/user.go -destination=internal/mocks/mock_user_repo.go -package=mocks
 type UserRepo interface {
-	// Authorize регистрирует/авторизует пользователя пользователя
-	Authorize(login, password string) (*User, error)
+	// CheckUser - проверяет пользователя по почте и паролю
+	CheckUser(email, password string) (*User, error)
+	// CreateUser создает пользователя
+	CreateUser(u types.CreateUser) (*User, error)
 	// Info возвращает информацию о пользователи
 	Info(userID string) (*User, error)
 	// ChangeProfile меняет поля пользователя с userID по updateUser

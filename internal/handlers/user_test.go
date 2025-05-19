@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"gafroshka-main/internal/mocks"
+	"gafroshka-main/internal/session"
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user"
 	"gafroshka-main/internal/user"
@@ -20,14 +21,218 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	invalidJSON = "Invalid JSON"
+)
+
+func TestUserHandler_Login(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockUserRepo := mocks.NewMockUserRepo(ctrl)
+	mockSessionRepo := mocks.NewMockSessionRepo(ctrl)
+	logger := zap.NewNop().Sugar()
+	handler := &UserHandler{
+		Logger:         logger,
+		UserRepository: mockUserRepo,
+		SessionManger:  mockSessionRepo,
+	}
+
+	tests := []struct {
+		name           string
+		body           RequestRegisterForm
+		mockBehavior   func()
+		expectedStatus int
+	}{
+		{
+			name: "Success",
+			body: RequestRegisterForm{
+				Email:    "test@example.com",
+				Password: "123456",
+			},
+			mockBehavior: func() {
+				mockUserRepo.EXPECT().
+					CheckUser("test@example.com", "123456").
+					Return(&user.User{ID: "1", Email: "test@example.com"}, nil)
+
+				mockSessionRepo.EXPECT().
+					CreateSession(gomock.Any(), gomock.Any(), "1", "test@example.com").
+					Return(&session.Session{ID: "sess-123"}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "User Not Found",
+			body: RequestRegisterForm{
+				Email:    "notfound@example.com",
+				Password: "123456",
+			},
+			mockBehavior: func() {
+				mockUserRepo.EXPECT().
+					CheckUser("notfound@example.com", "123456").
+					Return(nil, myErr.ErrNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name: "Wrong Password",
+			body: RequestRegisterForm{
+				Email:    "test@example.com",
+				Password: "wrongpass",
+			},
+			mockBehavior: func() {
+				mockUserRepo.EXPECT().
+					CheckUser("test@example.com", "wrongpass").
+					Return(nil, myErr.ErrBadPassword)
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name: "Internal Error",
+			body: RequestRegisterForm{
+				Email:    "test@example.com",
+				Password: "123456",
+			},
+			mockBehavior: func() {
+				mockUserRepo.EXPECT().
+					CheckUser("test@example.com", "123456").
+					Return(nil, errors.New("db failure"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:           invalidJSON,
+			body:           RequestRegisterForm{}, // ignored
+			mockBehavior:   func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockBehavior()
+
+			var body io.Reader
+			if tt.name == invalidJSON {
+				body = strings.NewReader("{invalid-json}")
+			} else {
+				bodyBytes, _ := json.Marshal(tt.body) // nolint:errcheck
+				body = bytes.NewReader(bodyBytes)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/login", body)
+			req.Header.Set("Content-Type", "application/json")
+
+			rr := httptest.NewRecorder()
+
+			handler.Login(rr, req)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestUserHandler_Register(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockUserRepo := mocks.NewMockUserRepo(ctrl)
+	mockSessionRepo := mocks.NewMockSessionRepo(ctrl)
+	logger := zap.NewNop().Sugar()
+	handler := &UserHandler{
+		Logger:         logger,
+		UserRepository: mockUserRepo,
+		SessionManger:  mockSessionRepo,
+	}
+
+	tests := []struct {
+		name           string
+		body           types.CreateUser
+		mockBehavior   func()
+		expectedStatus int
+	}{
+		{
+			name: "Success",
+			body: types.CreateUser{
+				Email:    "test@example.com",
+				Password: "123456",
+			},
+			mockBehavior: func() {
+				mockUserRepo.EXPECT().
+					CreateUser(types.CreateUser{
+						Email:    "test@example.com",
+						Password: "123456",
+					}).
+					Return(&user.User{ID: "1", Email: "test@example.com"}, nil)
+
+				mockSessionRepo.EXPECT().
+					CreateSession(gomock.Any(), gomock.AssignableToTypeOf(httptest.NewRecorder()), "1", "test@example.com").
+					Return(&session.Session{ID: "sess-123"}, nil)
+
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name: "Invalid Email Format",
+			body: types.CreateUser{
+				Email:    "invalid-email",
+				Password: "123456",
+			},
+			mockBehavior:   func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "User Already Exists",
+			body: types.CreateUser{
+				Email:    "exists@example.com",
+				Password: "123456",
+			},
+			mockBehavior: func() {
+				mockUserRepo.EXPECT().
+					CreateUser(gomock.Any()).
+					Return(nil, myErr.ErrAlreadyExists)
+			},
+			expectedStatus: http.StatusUnprocessableEntity,
+		},
+		{
+			name: "Internal Error",
+			body: types.CreateUser{
+				Email:    "test@example.com",
+				Password: "123456",
+			},
+			mockBehavior: func() {
+				mockUserRepo.EXPECT().
+					CreateUser(gomock.Any()).
+					Return(nil, errors.New("db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockBehavior()
+
+			bodyBytes, _ := json.Marshal(tt.body) // nolint:errcheck
+			req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			rr := httptest.NewRecorder()
+
+			handler.Register(rr, req)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
 func TestUserHandler_Info(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockRepo := mocks.NewMockUserRepo(ctrl)
 	logger := zap.NewNop().Sugar()
+	mockeSessionRepo := mocks.NewMockSessionRepo(ctrl)
 
-	handler := NewUserHandler(logger, mockRepo)
+	handler := NewUserHandler(logger, mockRepo, mockeSessionRepo)
 
 	tests := []struct {
 		name           string
@@ -37,30 +242,38 @@ func TestUserHandler_Info(t *testing.T) {
 	}{
 		{
 			name:   "Success",
-			userID: "123",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
 			mockBehavior: func() {
 				mockRepo.EXPECT().
-					Info("123").
-					Return(&user.User{ID: "123", Name: "Test"}, nil)
+					Info("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a").
+					Return(&user.User{ID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a", Name: "Test"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
+			name:   "Invalid ID",
+			userID: "da19a8d6",
+			mockBehavior: func() {
+
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name:   "User Not Found",
-			userID: "notfound",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
 			mockBehavior: func() {
 				mockRepo.EXPECT().
-					Info("notfound").
+					Info("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a").
 					Return(nil, myErr.ErrNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
 		{
 			name:   "Internal Error",
-			userID: "123",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
 			mockBehavior: func() {
 				mockRepo.EXPECT().
-					Info("123").
+					Info("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a").
 					Return(nil, errors.New("db error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -88,8 +301,9 @@ func TestUserHandler_ChangeProfile(t *testing.T) {
 
 	mockRepo := mocks.NewMockUserRepo(ctrl)
 	logger := zap.NewNop().Sugar()
+	mockeSessionRepo := mocks.NewMockSessionRepo(ctrl)
 
-	handler := NewUserHandler(logger, mockRepo)
+	handler := NewUserHandler(logger, mockRepo, mockeSessionRepo)
 
 	tests := []struct {
 		name           string
@@ -100,28 +314,36 @@ func TestUserHandler_ChangeProfile(t *testing.T) {
 	}{
 		{
 			name:   "Success",
-			userID: "123",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
 			body:   types.ChangeUser{Name: "Updated"},
 			mockBehavior: func() {
 				mockRepo.EXPECT().
-					ChangeProfile("123", types.ChangeUser{Name: "Updated"}).
-					Return(&user.User{ID: "123", Name: "Updated"}, nil)
+					ChangeProfile("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a", types.ChangeUser{Name: "Updated"}).
+					Return(&user.User{ID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a", Name: "Updated"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:   "User Not Found",
-			userID: "456",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
 			body:   types.ChangeUser{Email: "notfound@example.com"},
 			mockBehavior: func() {
 				mockRepo.EXPECT().
-					ChangeProfile("456", types.ChangeUser{Email: "notfound@example.com"}).
+					ChangeProfile("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a", types.ChangeUser{Email: "notfound@example.com"}).
 					Return(nil, myErr.ErrNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:           "Invalid JSON",
+			name:   "Invalid ID",
+			userID: "invalid-id",
+			mockBehavior: func() {
+
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           invalidJSON,
 			userID:         "789",
 			body:           types.ChangeUser{}, // won't be used, we override req body
 			mockBehavior:   func() {},
@@ -134,10 +356,11 @@ func TestUserHandler_ChangeProfile(t *testing.T) {
 			tt.mockBehavior()
 
 			var reqBody io.Reader
-			if tt.name == "Invalid JSON" {
+			if tt.name == invalidJSON {
 				reqBody = strings.NewReader("{invalid-json}")
 			} else {
-				jsonBody, _ := json.Marshal(tt.body)
+				// nolint:errcheck
+				jsonBody, _ := json.Marshal(tt.body) // nolint:errcheck
 				reqBody = bytes.NewReader(jsonBody)
 			}
 

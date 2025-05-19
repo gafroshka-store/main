@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"gafroshka-main/internal/app"
 	"gafroshka-main/internal/handlers"
+	"gafroshka-main/internal/middleware"
+	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
+	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
 
@@ -16,7 +19,8 @@ import (
 )
 
 const (
-	cfgPath = "config/config.yaml"
+	cfgPath   = "config/config.yaml"
+	RedisAddr = "redis:6379"
 )
 
 func main() {
@@ -59,17 +63,34 @@ func main() {
 		logger.Infof("Failed to get response to ping: %v", err)
 	}
 
+	// init redis
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     RedisAddr,
+		Password: "",
+		DB:       0, // стандартная БД
+	})
+
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
+	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
 
 	// init router
 	r := mux.NewRouter()
 
 	// init handlers
-	userHandlers := handlers.NewUserHandler(logger, userRepository)
+	userHandlers := handlers.NewUserHandler(logger, userRepository, sessionRepository)
 
-	r.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
-	r.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
+	// Ручки требующие авторизации
+	authRouter := r.PathPrefix("/api").Subrouter()
+	authRouter.Use(middleware.Auth(sessionRepository))
+
+	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
+	// Ручки НЕ требующие авторизации
+	noAuthRouter := r.PathPrefix("/api").Subrouter()
+
+	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
+	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
+	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
 
 	logger.Infow("starting server",
 		"type", "START",
