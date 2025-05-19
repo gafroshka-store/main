@@ -5,35 +5,30 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/internal/mocks/mock_session_repo.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/internal/session/repo.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/internal/session/session.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/internal/session/session_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/main.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/main.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/main/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/compose.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/init.sql" beforeDir="false" afterPath="$PROJECT_DIR$/db/init.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/announcement/announcement.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/announcement.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/announcement/announcement_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/announcement_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/announcement/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/repo.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/app/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/app/app.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/user_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/user_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/middleware/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/middleware/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/mocks/mock_session_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/mocks/mock_session_repo.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/mocks/mock_user_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/mocks/mock_user_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/types/errors/errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/errors/errors.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/session/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/session/repo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/session/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/session/session.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/session/session_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/session/session_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/types/announcement/announcement.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/announcement/announcement.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/types/user/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/user/user.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/user/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user/repo.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/user/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user/user.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/user/user_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user/user_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/wrappers/auth_wrappers/auth_wrappers.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/wrappers/auth_wrappers/auth_wrappers.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
+  <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../../Program Files/Go" />
   <component name="Git.Pull.Settings">
     <option name="OPTIONS">
       <set>
@@ -44,10 +39,10 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -81,10 +76,10 @@
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
     "RunOnceActivity.go.migrated.go.modules.settings": "true",
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "git-widget-placeholder": "feature/user__handlers",
+    "git-widget-placeholder": "feature/feedback__on__seller",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/keinpop/Desktop/gafroshka-store/main/internal",
+    "last_opened_file_path": "C:/Users/BaronPipistron",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
@@ -175,8 +170,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-gosdk-d297c17c1fbd-d82d926f19eb-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-243.22562.186" />
-        <option value="bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-GO-243.22562.186" />
+        <option value="bundled-gosdk-5df93f7ad4aa-df9ad98b711f-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-242.23339.24" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-GO-242.23339.24" />
       </set>
     </attachedChunks>
   </component>
