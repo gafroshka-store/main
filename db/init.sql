@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(30) NOT NULL,
@@ -16,8 +18,8 @@ CREATE TABLE users (
 
 CREATE TABLE user_feedback (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    user_writer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_writer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     comment TEXT,
     rating SMALLINT NOT NULL
 );
@@ -26,7 +28,7 @@ CREATE TABLE announcement (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    user_seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_seller_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     price DECIMAL NOT NULL CHECK (price >= 0),
     category INTEGER CHECK (discount BETWEEN 0 AND 100),
     discount SMALLINT DEFAULT 0 NOT NULL,
@@ -38,8 +40,8 @@ CREATE TABLE announcement (
 
 CREATE TABLE announcement_feedback (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    announcement_recipient_id INTEGER NOT NULL REFERENCES announcement(id) ON DELETE CASCADE,
-    user_writer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    announcement_recipient_id UUID NOT NULL REFERENCES announcement(id) ON DELETE CASCADE,
+    user_writer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     comment TEXT,
     rating SMALLINT NOT NULL
 );

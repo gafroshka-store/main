@@ -3,10 +3,14 @@ package user
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -23,18 +27,110 @@ func NewUserDBRepository(db *sql.DB, l *zap.SugaredLogger) *UserDBRepository {
 	}
 }
 
-func (ur *UserDBRepository) Authorize(login, password string) (*User, error) {
-	return nil, nil
+func (ur *UserDBRepository) CreateUser(u types.CreateUser) (*User, error) {
+	if u, _ := ur.CheckUser(u.Email, u.Password); u != nil { // nolint:errcheck
+		return nil, myErr.ErrAlreadyExists
+	}
+
+	query := `
+	INSERT INTO users (
+	   id, 
+	   name, 
+	   surname, 
+	   day_of_birth,
+	   sex, 
+	   registration_date,
+	   email,
+	   phone_number, 
+	   password_hash,
+	   balance,
+	   deals_count,
+	   rating,
+	   rating_count
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+`
+	userID := uuid.NewString()
+	registrationDate := time.Now()
+	hashP, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+	_, err = ur.DB.Exec(
+		query,
+		userID, u.Name, u.Surname,
+		u.DateOfBirth, u.Sex, registrationDate, u.Email,
+		u.PhoneNumber, string(hashP), 0, 0, 0, 0,
+	)
+	if err != nil {
+		ur.Logger.Warnf("Ошибка при создании информации пользователя: %v", err)
+		return nil, fmt.Errorf("%w: %w", myErr.ErrDBInternal, err)
+	}
+
+	return &User{
+		ID:               userID,
+		Name:             u.Name,
+		Surname:          u.Surname,
+		DayOfBirth:       u.DateOfBirth,
+		Sex:              u.Sex,
+		RegistrationDate: registrationDate,
+		Email:            u.Email,
+		PhoneNumber:      u.PhoneNumber,
+		PasswordHash:     string(hashP),
+		Balance:          0,
+		DealsCount:       0,
+		Rating:           0,
+		RatingCount:      0,
+	}, nil
 }
 
-func (ur *UserDBRepository) Info(userID string) (*User, error) {
+func (ur *UserDBRepository) CheckUser(email, password string) (*User, error) {
 	query := `
-	SELECT user_id, 
+		SELECT id, 
 		   name,
 		   surname,
 		   day_of_birth,
 		   sex,
-		   registration_data,
+		   registration_date,
+		   email,
+		   phone_number,
+		   password_hash,
+		   balance,
+		   deals_count,
+		   rating,
+		   rating_count
+	FROM users
+	WHERE email = $1 
+	`
+	var checkPassword string
+	var u User
+	err := ur.DB.QueryRow(query, email).Scan(
+		&u.ID, &u.Name, &u.Surname, &u.DayOfBirth,
+		&u.Sex, &u.RegistrationDate, &u.Email,
+		&u.PhoneNumber, &checkPassword, &u.Balance,
+		&u.DealsCount, &u.Rating, &u.RatingCount,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, myErr.ErrNotFound
+		}
+		return nil, fmt.Errorf("%w: %w", myErr.ErrDBInternal, err)
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(checkPassword), []byte(password)); err != nil {
+		return nil, myErr.ErrBadPassword
+	}
+
+	return &u, nil
+}
+
+func (ur *UserDBRepository) Info(userID string) (*User, error) {
+	query := `
+	SELECT id, 
+		   name,
+		   surname,
+		   day_of_birth,
+		   sex,
+		   registration_date,
 		   email,
 		   phone_number,
 		   balance,
@@ -42,7 +138,7 @@ func (ur *UserDBRepository) Info(userID string) (*User, error) {
 		   rating,
 		   rating_count
 	FROM users
-	WHERE user_id = $1
+	WHERE id = $1
 	`
 	u := &User{}
 	err := ur.DB.QueryRow(query, userID).
@@ -94,7 +190,7 @@ func (ur *UserDBRepository) ChangeProfile(userID string, updateUser types.Change
 		return ur.Info(userID) // Если ничего не обновляется, просто вернуть текущие данные
 	}
 
-	query := "UPDATE users SET " + strings.Join(fields, ", ") + " WHERE user_id = $" + strconv.Itoa(argID) // nolint:gosec
+	query := "UPDATE users SET " + strings.Join(fields, ", ") + " WHERE id = $" + strconv.Itoa(argID) // nolint:gosec
 	args = append(args, userID)
 
 	res, err := ur.DB.Exec(query, args...)
