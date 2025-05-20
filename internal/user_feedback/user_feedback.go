@@ -1,8 +1,8 @@
-package userFeedback
+package user_feedback
 
 import (
 	"context"
-	types "gafroshka-main/internal/types/userFeedback"
+	types "gafroshka-main/internal/types/user_feedback"
 )
 
 // UserFeedback - структура отзыва на пользователя
@@ -16,16 +16,24 @@ type UserFeedback struct {
 
 type UserFeedbackRepo interface {
 	// Create - создает новый отзыв на пользователя
-	// Возвращает ID отзыва
-	Create(ctx context.Context, userFeedback *UserFeedback) (string, error)
+	// Возвращает созданный UserFeedback
+	Create(ctx context.Context, userFeedback *UserFeedback) (*UserFeedback, error)
+
+	// GetByID - получает конкретный отзыв по ID
+	// Возвращает отзыв на пользователя *UserFeedback
+	GetByID(ctx context.Context, userFeedbackID string) (*UserFeedback, error)
 
 	// GetByUserID - получает все отзывы на конкретного пользователя
 	// Возвращает массив отзывов на пользователя []*UserFeedback
 	GetByUserID(ctx context.Context, userRecipientID string) ([]*UserFeedback, error)
 
 	// Update - обновляет существующий отзыв на пользователя
-	// Возвращает error
-	Update(ctx context.Context, userFeedbackID string, updateUserFeedback types.UpdateUserFeedback) error
+	// Возвращает обновленный UserFeedback
+	Update(
+		ctx context.Context,
+		userFeedbackID string,
+		updateUserFeedback types.UpdateUserFeedback,
+	) (*UserFeedback, error)
 
 	// Delete - удаляет существующий отзыв на пользователя
 	// Возвращает error

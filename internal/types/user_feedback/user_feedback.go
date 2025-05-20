@@ -1,4 +1,4 @@
-package userFeedback
+package user_feedback
 
 // UpdateUserFeedback - структура отзыва на продавца с полями для изменения
 type UpdateUserFeedback struct {

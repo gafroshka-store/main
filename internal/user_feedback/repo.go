@@ -1,16 +1,17 @@
-package userFeedback
+package user_feedback
 
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"strconv"
 	"strings"
 
-	errors "gafroshka-main/internal/types/errors"
-	types "gafroshka-main/internal/types/userFeedback"
+	myErr "gafroshka-main/internal/types/errors"
+	types "gafroshka-main/internal/types/user_feedback"
 )
 
 type UserFeedbackRepository struct {
@@ -25,10 +26,12 @@ func NewUserFeedbackRepository(DB *sql.DB, logger *zap.SugaredLogger) *UserFeedb
 	}
 }
 
+// Create - создает новый отзыв на пользователя
+// Возвращает созданный UserFeedback
 func (userFeedbackRepository *UserFeedbackRepository) Create(
 	ctx context.Context,
 	userFeedback *UserFeedback,
-) (string, error) {
+) (*UserFeedback, error) {
 	userFeedback.ID = uuid.New().String()
 
 	query :=
@@ -54,16 +57,54 @@ func (userFeedbackRepository *UserFeedbackRepository) Create(
 			zap.String("userFeedbackID", userFeedback.ID),
 		)
 
-		return "", errors.ErrDBInternal
+		return nil, myErr.ErrDBInternal
 	}
 
 	userFeedbackRepository.Logger.Info(
 		fmt.Sprintf("User feedback with userFeedbackID %s created successfully", userFeedback.ID),
 	)
 
-	return userFeedback.ID, nil
+	return userFeedback, nil
 }
 
+// GetByID - получает конкретный отзыв по ID
+// Возвращает отзыв на пользователя *UserFeedback
+func (userFeedbackRepository *UserFeedbackRepository) GetByID(
+	ctx context.Context,
+	userFeedbackID string,
+) (*UserFeedback, error) {
+	query :=
+		`
+		SELECT id, user_recipient_id, user_writer_id, comment, rating
+		FROM user_feedback
+		WHERE id = $1
+ 		`
+
+	userFeedback := &UserFeedback{}
+	err := userFeedbackRepository.DB.
+		QueryRow(query, userFeedbackID).
+		Scan(
+			&userFeedback.ID,
+			&userFeedback.UserRecipientID,
+			&userFeedback.UserWriterID,
+			&userFeedback.Comment,
+			&userFeedback.Rating,
+		)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, myErr.ErrNotFound
+		}
+		userFeedbackRepository.Logger.Warnf("Error while load userFeedback info: %v", err)
+
+		return nil, myErr.ErrDBInternal
+	}
+
+	return userFeedback, nil
+}
+
+// GetByUserID - получает все отзывы на конкретного пользователя
+// Возвращает массив отзывов на пользователя []*UserFeedback
 func (userFeedbackRepository *UserFeedbackRepository) GetByUserID(
 	ctx context.Context,
 	userRecipientID string,
@@ -83,7 +124,7 @@ func (userFeedbackRepository *UserFeedbackRepository) GetByUserID(
 			zap.String("userID", userRecipientID),
 		)
 
-		return nil, errors.ErrDBInternal
+		return nil, myErr.ErrDBInternal
 	}
 	defer rows.Close()
 
@@ -103,7 +144,7 @@ func (userFeedbackRepository *UserFeedbackRepository) GetByUserID(
 				zap.Error(err),
 			)
 
-			return nil, errors.ErrDBInternal
+			return nil, myErr.ErrDBInternal
 		}
 
 		userFeedbacks = append(userFeedbacks, &userFeedback)
@@ -116,17 +157,19 @@ func (userFeedbackRepository *UserFeedbackRepository) GetByUserID(
 			zap.String("userID", userRecipientID),
 		)
 
-		return nil, errors.ErrDBInternal
+		return nil, myErr.ErrDBInternal
 	}
 
 	return userFeedbacks, nil
 }
 
+// Update - обновляет существующий отзыв на пользователя
+// Возвращает обновленный UserFeedback
 func (userFeedbackRepository *UserFeedbackRepository) Update(
 	ctx context.Context,
 	userFeedbackID string,
 	updateUserFeedback types.UpdateUserFeedback,
-) error {
+) (*UserFeedback, error) {
 	fields := []string{}
 	args := []interface{}{}
 	argID := 1
@@ -144,7 +187,7 @@ func (userFeedbackRepository *UserFeedbackRepository) Update(
 	}
 
 	if len(fields) == 0 {
-		return nil // Если ничего не обновляется, просто вернуть nil
+		return nil, nil // Если ничего не обновляется, просто вернуть nil, nil
 	}
 
 	query := "UPDATE user_feedback SET " + strings.Join(fields, ", ") +
@@ -159,7 +202,7 @@ func (userFeedbackRepository *UserFeedbackRepository) Update(
 			zap.String("userFeedbackID", userFeedbackID),
 		)
 
-		return errors.ErrDBInternal
+		return nil, myErr.ErrDBInternal
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -170,7 +213,7 @@ func (userFeedbackRepository *UserFeedbackRepository) Update(
 			zap.String("userFeedbackID", userFeedbackID),
 		)
 
-		return errors.ErrDBInternal
+		return nil, myErr.ErrDBInternal
 	}
 
 	if rowsAffected != 1 {
@@ -178,16 +221,18 @@ func (userFeedbackRepository *UserFeedbackRepository) Update(
 			fmt.Sprintf("No user feedback with feedbackID %s found to update", userFeedbackID),
 		)
 
-		return errors.ErrNotFoundUserFeedback
+		return nil, myErr.ErrNotFoundUserFeedback
 	}
 
 	userFeedbackRepository.Logger.Info(
 		fmt.Sprintf("User feedback with userFeedbackID %s updated successfully", userFeedbackID),
 	)
 
-	return nil
+	return userFeedbackRepository.GetByID(ctx, userFeedbackID)
 }
 
+// Delete - удаляет существующий отзыв на пользователя
+// Возвращает error
 func (userFeedbackRepository *UserFeedbackRepository) Delete(
 	ctx context.Context,
 	userFeedbackID string,
@@ -206,7 +251,7 @@ func (userFeedbackRepository *UserFeedbackRepository) Delete(
 			zap.String("userFeedbackID", userFeedbackID),
 		)
 
-		return errors.ErrDBInternal
+		return myErr.ErrDBInternal
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -217,7 +262,7 @@ func (userFeedbackRepository *UserFeedbackRepository) Delete(
 			zap.String("userFeedbackID", userFeedbackID),
 		)
 
-		return errors.ErrDBInternal
+		return myErr.ErrDBInternal
 	}
 
 	if rowsAffected != 1 {
@@ -225,7 +270,7 @@ func (userFeedbackRepository *UserFeedbackRepository) Delete(
 			fmt.Sprintf("No user feedback with feedbackID %s found to delete", userFeedbackID),
 		)
 
-		return errors.ErrNotFoundUserFeedback
+		return myErr.ErrNotFoundUserFeedback
 	}
 
 	userFeedbackRepository.Logger.Info(

@@ -4,11 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	myErr "gafroshka-main/internal/types/errors"
-	types "gafroshka-main/internal/types/userFeedback"
-	"gafroshka-main/internal/userFeedback"
+	types "gafroshka-main/internal/types/user_feedback"
+	userFeedback "gafroshka-main/internal/user_feedback"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"net/http"
+)
+
+const (
+	minRating        = 1
+	maxRating        = 5
+	maxCommentLength = 1000
 )
 
 type UserFeedbackHandler struct {
@@ -31,30 +37,31 @@ func (h *UserFeedbackHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if feedback.Rating < 1 || feedback.Rating > 5 {
+	if feedback.Rating < minRating || feedback.Rating > maxRating {
 		myErr.SendErrorTo(w, myErr.ErrRatingIsInvalid, http.StatusBadRequest, h.Logger)
 		return
 	}
-	if len(feedback.Comment) > 1000 {
+	if len(feedback.Comment) > maxCommentLength {
 		myErr.SendErrorTo(w, myErr.ErrCommentIsTooLong, http.StatusBadRequest, h.Logger)
 		return
 	}
 
-	id, err := h.UserFeedbackRepository.Create(r.Context(), &feedback)
+	createdFeedback, err := h.UserFeedbackRepository.Create(r.Context(), &feedback)
 	if err != nil {
 		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(map[string]string{"id": id}); err != nil {
+	if err := json.NewEncoder(w).Encode(createdFeedback); err != nil {
 		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
 
 		return
 	}
 
-	h.Logger.Infof("Created user feedback with id: %s", id)
+	h.Logger.Infof("Created user feedback with id: %s", createdFeedback.ID)
 }
 
 func (h *UserFeedbackHandler) GetByUserID(w http.ResponseWriter, r *http.Request) {
@@ -97,23 +104,29 @@ func (h *UserFeedbackHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(updateData.Comment) > 1000 {
+	if len(updateData.Comment) > maxCommentLength {
 		myErr.SendErrorTo(w, myErr.ErrCommentIsTooLong, http.StatusBadRequest, h.Logger)
+
 		return
 	}
 
-	err := h.UserFeedbackRepository.Update(r.Context(), feedbackID, updateData)
+	updatedFeedback, err := h.UserFeedbackRepository.Update(r.Context(), feedbackID, updateData)
 	if err != nil {
 		if errors.Is(err, myErr.ErrNotFoundUserFeedback) {
 			myErr.SendErrorTo(w, err, http.StatusNotFound, h.Logger)
 		} else {
 			myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
 		}
-
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(updatedFeedback); err != nil {
+		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
+
 	h.Logger.Infof("Updated user feedback with id: %s", feedbackID)
 }
 
@@ -136,6 +149,6 @@ func (h *UserFeedbackHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
 	h.Logger.Infof("Deleted user feedback with id: %s", feedbackID)
 }

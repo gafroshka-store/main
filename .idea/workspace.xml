@@ -6,22 +6,14 @@
   <component name="ChangeListManager">
     <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/announcement/announcement.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/announcement.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/announcement/announcement_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/announcement_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/announcement/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/app/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/app/app.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/middleware/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/middleware/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/mocks/mock_session_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/mocks/mock_session_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/mocks/mock_user_repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/mocks/mock_user_repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/session/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/session/repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/session/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/session/session.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/session/session_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/session/session_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/types/announcement/announcement.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/announcement/announcement.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/types/user/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/user/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/user/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user/repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/user/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/user/user_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user/user_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/wrappers/auth_wrappers/auth_wrappers.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/wrappers/auth_wrappers/auth_wrappers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/main/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/userFeedback/userFeedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/user_feedback/user_feedback.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/userFeedback/userFeedback_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/user_feedback/user_feedback_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/mocks/mock_user_feedback.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/types/userFeedback/userFeedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/user_feedback/user_feedback.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/userFeedback/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/repo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/userFeedback/userFeedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/user_feedback.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/userFeedback/userFeedback_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/user_feedback_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

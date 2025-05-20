@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"gafroshka-main/internal/app"
 	handlersUser "gafroshka-main/internal/handlers/user"
-	handlersUserFeedback "gafroshka-main/internal/handlers/userFeedback"
+	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
-	"gafroshka-main/internal/userFeedback"
+	"gafroshka-main/internal/user_feedback"
 	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
@@ -75,7 +75,7 @@ func main() {
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
-	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
+	userFeedbackRepository := user_feedback.NewUserFeedbackRepository(db, logger)
 
 	// init router
 	r := mux.NewRouter()

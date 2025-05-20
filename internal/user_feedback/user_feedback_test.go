@@ -1,12 +1,13 @@
-package userFeedback
+package user_feedback
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
 	customErrors "gafroshka-main/internal/types/errors"
-	types "gafroshka-main/internal/types/userFeedback"
+	types "gafroshka-main/internal/types/user_feedback"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
@@ -83,6 +84,89 @@ func TestUserFeedbackRepository_Create(t *testing.T) {
 	}
 }
 
+func TestUserFeedbackRepository_GetByID(t *testing.T) {
+	repo, mock, teardown := setupTestRepo(t)
+	defer teardown()
+
+	tests := []struct {
+		name     string
+		mockFunc func()
+		inputID  string
+		want     *UserFeedback
+		wantErr  error
+	}{
+		{
+			name:    "success",
+			inputID: "id1",
+			mockFunc: func() {
+				rows := sqlmock.NewRows([]string{"id", "user_recipient_id", "user_writer_id", "comment", "rating"}).
+					AddRow("id1", "recipient-uuid", "writer-uuid", "Nice work", 4)
+				mock.ExpectQuery(`SELECT id, user_recipient_id, user_writer_id, comment, rating FROM user_feedback WHERE id = \$1`).
+					WithArgs("id1").
+					WillReturnRows(rows)
+			},
+			want: func() *UserFeedback {
+				id := "id1"
+				recipientID := "recipient-uuid"
+				writerID := "writer-uuid"
+				comment := "Nice work"
+				rating := 4
+				return &UserFeedback{
+					ID:              id,
+					UserRecipientID: recipientID,
+					UserWriterID:    writerID,
+					Comment:         comment,
+					Rating:          rating,
+				}
+			}(),
+			wantErr: nil,
+		},
+		{
+			name:    "not found",
+			inputID: "id2",
+			mockFunc: func() {
+				mock.ExpectQuery(
+					`
+						SELECT id, user_recipient_id, user_writer_id, comment, rating 
+						FROM user_feedback WHERE id = \$1
+						`,
+				).
+					WithArgs("id2").
+					WillReturnError(sql.ErrNoRows)
+			},
+			want:    nil,
+			wantErr: customErrors.ErrNotFound,
+		},
+		{
+			name:    "db error",
+			inputID: "id3",
+			mockFunc: func() {
+				mock.ExpectQuery(
+					`
+						SELECT id, user_recipient_id, user_writer_id, comment, rating 
+						FROM user_feedback WHERE id = \$1
+						`,
+				).
+					WithArgs("id3").
+					WillReturnError(errors.New("db connection error"))
+			},
+			want:    nil,
+			wantErr: customErrors.ErrDBInternal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockFunc()
+			result, err := repo.GetByID(context.Background(), tt.inputID)
+
+			assert.Equal(t, tt.wantErr, err)
+			assert.Equal(t, tt.want, result)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestUserFeedbackRepository_GetByUserID(t *testing.T) {
 	repo, mock, teardown := setupTestRepo(t)
 	defer teardown()
@@ -148,6 +232,13 @@ func TestUserFeedbackRepository_Update(t *testing.T) {
 			mockFunc: func() {
 				mock.ExpectExec("UPDATE user_feedback SET (.+)").
 					WillReturnResult(sqlmock.NewResult(0, 1))
+
+				rows := sqlmock.NewRows([]string{"id", "user_recipient_id", "user_writer_id", "comment", "rating"}).
+					AddRow("feedback-id", "recipient-uuid", "writer-uuid", "Updated!", 3)
+
+				mock.ExpectQuery("SELECT id, user_recipient_id, user_writer_id, comment, rating FROM user_feedback WHERE id =").
+					WithArgs("feedback-id").
+					WillReturnRows(rows)
 			},
 			wantErr: nil,
 		},
@@ -184,7 +275,7 @@ func TestUserFeedbackRepository_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockFunc()
-			err := repo.Update(context.Background(), "feedback-id", tt.input)
+			_, err := repo.Update(context.Background(), "feedback-id", tt.input)
 
 			assert.Equal(t, tt.wantErr, err)
 			assert.NoError(t, mock.ExpectationsWereMet())

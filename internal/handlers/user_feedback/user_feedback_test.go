@@ -3,11 +3,11 @@ package handlers_test
 import (
 	"bytes"
 	"encoding/json"
-	"gafroshka-main/internal/handlers/userFeedback"
+	handlers "gafroshka-main/internal/handlers/user_feedback"
 	"gafroshka-main/internal/mocks"
 	myErr "gafroshka-main/internal/types/errors"
-	types "gafroshka-main/internal/types/userFeedback"
-	"gafroshka-main/internal/userFeedback"
+	types "gafroshka-main/internal/types/user_feedback"
+	"gafroshka-main/internal/user_feedback"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap/zaptest"
 	"net/http"
@@ -27,13 +27,13 @@ func TestUserFeedbackHandler_Create(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		payload        userFeedback.UserFeedback
+		payload        user_feedback.UserFeedback
 		mockBehavior   func()
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			payload: userFeedback.UserFeedback{
+			payload: user_feedback.UserFeedback{
 				UserRecipientID: "user1",
 				UserWriterID:    "user2",
 				Comment:         "Great!",
@@ -42,13 +42,19 @@ func TestUserFeedbackHandler_Create(t *testing.T) {
 			mockBehavior: func() {
 				mockRepo.EXPECT().
 					Create(gomock.Any(), gomock.Any()).
-					Return("123", nil)
+					Return(&user_feedback.UserFeedback{
+						ID:              "123",
+						UserRecipientID: "user1",
+						UserWriterID:    "user2",
+						Comment:         "Great!",
+						Rating:          5,
+					}, nil)
 			},
 			expectedStatus: http.StatusCreated,
 		},
 		{
 			name: "invalid json",
-			payload: userFeedback.UserFeedback{
+			payload: user_feedback.UserFeedback{
 				UserRecipientID: "",
 			},
 			mockBehavior:   func() {},
@@ -105,7 +111,7 @@ func TestUserFeedbackHandler_GetByUserID(t *testing.T) {
 			mockBehavior: func() {
 				mockRepo.EXPECT().
 					GetByUserID(gomock.Any(), "user1").
-					Return([]*userFeedback.UserFeedback{}, nil)
+					Return([]*user_feedback.UserFeedback{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -164,7 +170,13 @@ func TestUserFeedbackHandler_Update(t *testing.T) {
 						Comment: "Updated!",
 						Rating:  4,
 					}).
-					Return(nil)
+					Return(&user_feedback.UserFeedback{
+						ID:              "id1",
+						UserRecipientID: "userX",
+						UserWriterID:    "userY",
+						Comment:         "Updated!",
+						Rating:          4,
+					}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -178,9 +190,9 @@ func TestUserFeedbackHandler_Update(t *testing.T) {
 				mockRepo.EXPECT().
 					Update(gomock.Any(), "id2", types.UpdateUserFeedback{
 						Comment: "Nope",
-						Rating:  0, // по умолчанию int
+						Rating:  0,
 					}).
-					Return(myErr.ErrNotFoundUserFeedback)
+					Return(nil, myErr.ErrNotFoundUserFeedback)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -231,7 +243,7 @@ func TestUserFeedbackHandler_Delete(t *testing.T) {
 					Delete(gomock.Any(), "id1").
 					Return(nil)
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name:       "not found",
