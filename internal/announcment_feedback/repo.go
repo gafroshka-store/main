@@ -2,7 +2,6 @@ package announcmentfeedback
 
 import (
 	"database/sql"
-	announcmentfeedback "gafroshka-main/internal/types/announcmentFeedback"
 	"gafroshka-main/internal/types/errors"
 
 	"github.com/google/uuid"
@@ -14,12 +13,6 @@ type FeedbackDBRepository struct {
 	Logger *zap.SugaredLogger
 }
 
-type FeedbackRepo interface {
-	Create(feedback announcmentfeedback.Feedback) (announcmentfeedback.Feedback, error)
-	Delete(feedbackID string) error
-	GetByAnnouncementID(announcementID string) ([]announcmentfeedback.Feedback, error)
-}
-
 func NewFeedbackDBRepository(db *sql.DB, l *zap.SugaredLogger) *FeedbackDBRepository {
 	return &FeedbackDBRepository{
 		DB:     db,
@@ -27,7 +20,7 @@ func NewFeedbackDBRepository(db *sql.DB, l *zap.SugaredLogger) *FeedbackDBReposi
 	}
 }
 
-func (fr *FeedbackDBRepository) Create(f announcmentfeedback.Feedback) (announcmentfeedback.Feedback, error) {
+func (fr *FeedbackDBRepository) Create(f Feedback) (Feedback, error) {
 	f.ID = uuid.New().String()
 	query := `
         INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
@@ -43,7 +36,7 @@ func (fr *FeedbackDBRepository) Create(f announcmentfeedback.Feedback) (announcm
 	)
 	if err != nil {
 		fr.Logger.Warnf("Ошибка при создании отзыва: %v", err)
-		return announcmentfeedback.Feedback{}, errors.ErrDBInternal
+		return Feedback{}, errors.ErrDBInternal
 	}
 
 	return f, nil
@@ -71,7 +64,7 @@ func (fr *FeedbackDBRepository) Delete(feedbackID string) error {
 	return nil
 }
 
-func (fr *FeedbackDBRepository) GetByAnnouncementID(announcementID string) ([]announcmentfeedback.Feedback, error) {
+func (fr *FeedbackDBRepository) GetByAnnouncementID(announcementID string) ([]Feedback, error) {
 	query := `
 		SELECT id, announcement_recipient_id, user_writer_id, comment, rating
 		FROM announcement_feedback
@@ -85,9 +78,9 @@ func (fr *FeedbackDBRepository) GetByAnnouncementID(announcementID string) ([]an
 	}
 	defer rows.Close()
 
-	var feedbacks []announcmentfeedback.Feedback
+	var feedbacks []Feedback
 	for rows.Next() {
-		var fb announcmentfeedback.Feedback
+		var fb Feedback
 		err := rows.Scan(
 			&fb.ID,
 			&fb.AnnouncementID,

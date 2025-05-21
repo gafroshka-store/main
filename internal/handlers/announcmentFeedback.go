@@ -5,8 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	annfb "gafroshka-main/internal/announcmentFeedback"
-	annfbtype "gafroshka-main/internal/types/announcmentFeedback"
+	annfb "gafroshka-main/internal/announcment_feedback"
 	myErr "gafroshka-main/internal/types/errors"
 
 	"github.com/gorilla/mux"
@@ -26,7 +25,7 @@ func NewAnnouncementFeedbackHandler(logger *zap.SugaredLogger, repo annfb.Feedba
 }
 
 func (h *AnnouncementFeedbackHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var f annfbtype.Feedback
+	var f annfb.Feedback
 	if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
 		myErr.SendErrorTo(w, errors.New("invalid JSON payload"), http.StatusBadRequest, h.Logger)
 		return

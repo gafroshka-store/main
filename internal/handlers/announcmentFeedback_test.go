@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	announcmentfeedback "gafroshka-main/internal/announcment_feedback"
 	hand "gafroshka-main/internal/handlers"
 	"gafroshka-main/internal/mocks"
-	announcmentfeedback "gafroshka-main/internal/types/announcmentFeedback"
 	myErr "gafroshka-main/internal/types/errors"
 
 	"testing"

@@ -4,7 +4,6 @@ import (
 	"regexp"
 	"testing"
 
-	announcmentfeedback "gafroshka-main/internal/types/announcmentFeedback"
 	"gafroshka-main/internal/types/errors"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -28,7 +27,7 @@ func TestCreateFeedback(t *testing.T) {
 	repo, mock, teardown := setupTestRepo(t)
 	defer teardown()
 
-	testFeedback := announcmentfeedback.Feedback{
+	testFeedback := Feedback{
 		AnnouncementID: "1",
 		UserWriterID:   "2",
 		Comment:        "Отличное объявление!",

@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	annfb "gafroshka-main/internal/announcmentFeedback"
+	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	"gafroshka-main/internal/handlers"
 	"gafroshka-main/internal/middleware"
@@ -75,16 +75,21 @@ func main() {
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
+	feedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 
 	// init router
 	r := mux.NewRouter()
 
 	// init handlers
 	userHandlers := handlers.NewUserHandler(logger, userRepository, sessionRepository)
+	feedbackHandlers := handlers.NewAnnouncementFeedbackHandler(logger, feedbackRepository)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
 	authRouter.Use(middleware.Auth(sessionRepository))
+
+	authRouter.HandleFunc("/feedback", feedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/feedback/{id}", feedbackHandlers.Delete).Methods("DELETE")
 
 	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
 	// Ручки НЕ требующие авторизации
@@ -94,15 +99,6 @@ func main() {
 	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
 	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
 
-	feedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
-
-	feedbackHandlers := handlers.NewAnnouncementFeedbackHandler(logger, feedbackRepository)
-
-	// Ручки, требующие авторизации
-	authRouter.HandleFunc("/feedback", feedbackHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/feedback/{id}", feedbackHandlers.Delete).Methods("DELETE")
-
-	// Ручки, НЕ требующие авторизации
 	noAuthRouter.HandleFunc("/feedback/announcement/{id}", feedbackHandlers.GetByAnnouncementID).Methods("GET")
 
 	logger.Infow("starting server",

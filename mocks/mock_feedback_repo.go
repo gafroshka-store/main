@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	announcmentfeedback "gafroshka-main/internal/types/announcmentFeedback"
+	announcmentfeedback "gafroshka-main/internal/announcment_feedback"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
