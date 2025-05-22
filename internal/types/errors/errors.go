@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	ErrDBInternal    = errors.New("database internal error")
-	ErrNotFound      = errors.New("record not found")
-	ErrAlreadyExists = errors.New("record already exists")
-	ErrNotFoundFeedback = errors.New("отзыв с таким id не найден")
-	ErrInvalidRating    = errors.New("рейтинг должен быть от 1 до 5")
+	ErrDBInternal       = errors.New("database internal error")
+	ErrNotFound         = errors.New("record not found")
+	ErrAlreadyExists    = errors.New("record already exists")
+	ErrNotFoundFeedback = errors.New("can't find a feedback with this ID")
+	ErrInvalidRating    = errors.New("the rating should be from 1 to 5")
 	ErrSessionNotFound  = errors.New("session not found")
 	ErrSessionIsExpired = errors.New("session is expired")
 	ErrNoAuth           = errors.New("authorization required")
