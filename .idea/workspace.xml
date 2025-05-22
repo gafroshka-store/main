@@ -4,11 +4,21 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="" />
+    <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/main/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/main.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
   </component>
   <component name="GOROOT" url="file://$USER_HOME$/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.24.0.darwin-amd64" />
   <component name="Git.Settings">
@@ -24,14 +34,16 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
     "Go Test.TestAnnouncementDBRepository_Search/result_limit_enforcement in gafroshka-main/internal/announcement.executor": "Run",
     "Go Test.go test gafroshka-main/internal/announcement.executor": "Run",
+    "Go Test.go test gafroshka-main/internal/handlers.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
     "RunOnceActivity.go.migrated.go.modules.settings": "true",
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "git-widget-placeholder": "feature/fix__sql",
+    "git-widget-placeholder": "master",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
     "last_opened_file_path": "/Users/Nyamerka/GolandProjects/main/db",
@@ -45,7 +57,7 @@
       <recent name="$PROJECT_DIR$/db" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.go test gafroshka-main/internal/announcement">
+  <component name="RunManager" selected="Go Test.go test gafroshka-main/internal/user">
     <configuration name="TestAnnouncementDBRepository_Search/result_limit_enforcement in gafroshka-main/internal/announcement" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="main" />
       <working_directory value="$PROJECT_DIR$/internal/announcement" />
@@ -69,8 +81,32 @@
       <framework value="gotest" />
       <method v="2" />
     </configuration>
+    <configuration name="go test gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test gafroshka-main/internal/user" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/user" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/user" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.go test gafroshka-main/internal/user" />
+        <item itemvalue="Go Test.go test gafroshka-main/internal/handlers" />
         <item itemvalue="Go Test.go test gafroshka-main/internal/announcement" />
         <item itemvalue="Go Test.TestAnnouncementDBRepository_Search/result_limit_enforcement in gafroshka-main/internal/announcement" />
       </list>

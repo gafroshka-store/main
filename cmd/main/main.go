@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"gafroshka-main/internal/announcement"
 	"gafroshka-main/internal/app"
 	"gafroshka-main/internal/handlers"
 	"gafroshka-main/internal/user"
@@ -25,12 +26,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	logger := zapLogger.Sugar()
-	//	тк функция откладывается буду использовать
-	// обертку в анонимную функцию
 	defer func() {
-		err = zapLogger.Sync()
-		if err != nil {
+		if err := zapLogger.Sync(); err != nil {
 			logger.Warnf("error to sync logger: %v", err)
 		}
 	}()
@@ -53,23 +52,29 @@ func main() {
 	}
 
 	db.SetMaxOpenConns(c.MaxOpenConns)
-
-	err = db.Ping()
-	if err != nil {
+	if err := db.Ping(); err != nil {
 		logger.Infof("Failed to get response to ping: %v", err)
 	}
 
-	// init repository
-	userRepository := user.NewUserDBRepository(db, logger)
+	// init repositories
+	userRepo := user.NewUserDBRepository(db, logger)
+	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
+
+	// init handlers
+	userHandler := handlers.NewUserHandler(logger, userRepo)
+	annHandler := handlers.NewAnnouncementHandler(logger, annRepo)
 
 	// init router
 	r := mux.NewRouter()
-
-	// init handlers
-	userHandlers := handlers.NewUserHandler(logger, userRepository)
-
-	r.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
-	r.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
+	// user routes
+	r.HandleFunc("/user/{id}", userHandler.Info).Methods("GET")
+	r.HandleFunc("/user/{id}", userHandler.ChangeProfile).Methods("PUT")
+	// announcement routes
+	r.HandleFunc("/announcement", annHandler.Create).Methods("POST")
+	r.HandleFunc("/announcement/{id}", annHandler.GetByID).Methods("GET")
+	r.HandleFunc("/announcements/top/{limit}", annHandler.GetTopN).Methods("GET")
+	r.HandleFunc("/announcements/search", annHandler.Search).Methods("GET")
+	r.HandleFunc("/announcement/{id}/rating", annHandler.UpdateRating).Methods("POST")
 
 	logger.Infow("starting server",
 		"type", "START",
@@ -84,8 +89,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	err = srv.ListenAndServe()
-	if err != nil {
+	if err := srv.ListenAndServe(); err != nil {
 		panic("can't start server: " + err.Error())
 	}
 }
