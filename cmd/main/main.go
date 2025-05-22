@@ -3,14 +3,16 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	"gafroshka-main/internal/handlers"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
-	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -73,16 +75,21 @@ func main() {
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
+	feedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 
 	// init router
 	r := mux.NewRouter()
 
 	// init handlers
 	userHandlers := handlers.NewUserHandler(logger, userRepository, sessionRepository)
+	feedbackHandlers := handlers.NewAnnouncementFeedbackHandler(logger, feedbackRepository)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
 	authRouter.Use(middleware.Auth(sessionRepository))
+
+	authRouter.HandleFunc("/feedback", feedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/feedback/{id}", feedbackHandlers.Delete).Methods("DELETE")
 
 	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
 	// Ручки НЕ требующие авторизации
@@ -91,6 +98,8 @@ func main() {
 	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
 	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
 	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
+
+	noAuthRouter.HandleFunc("/feedback/announcement/{id}", feedbackHandlers.GetByAnnouncementID).Methods("GET")
 
 	logger.Infow("starting server",
 		"type", "START",
