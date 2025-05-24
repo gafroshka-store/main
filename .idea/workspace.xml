@@ -5,15 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.golangci.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/announcment_feedback/announcment_feedback.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/announcment_feedback/feedback_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/announcment_feedback/repo.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/announcement_feedback/announcment_feedback.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/handlers/announcement_feedback/announcment_feedback_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/mocks/mock_announcment_feedback_repo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/.golang-ci.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/.golang-ci.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.golint.yaml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/main/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/userFeedback/userFeedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/user_feedback/user_feedback.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/userFeedback/userFeedback_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/user_feedback/user_feedback_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/mocks/mock_user_feedback.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/types/userFeedback/userFeedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/user_feedback/user_feedback.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/userFeedback/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/userFeedback/userFeedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/user_feedback.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/userFeedback/userFeedback_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/user_feedback_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/app/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/app/app.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/user/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/user/user.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/user/user_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/user/user_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/types/errors/errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/errors/errors.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,7 +74,7 @@
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
     "RunOnceActivity.go.migrated.go.modules.settings": "true",
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "git-widget-placeholder": "feature/feedback__on__seller",
+    "git-widget-placeholder": "Merging feature/feedback__on__seller",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
     "last_opened_file_path": "C:/Users/BaronPipistron",
@@ -87,6 +93,9 @@
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/internal" />
       <recent name="$PROJECT_DIR$/db" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\BaronPipistron\Desktop\GoProject\main\internal\handlers\announcement_feedback" />
     </key>
   </component>
   <component name="RunManager" selected="Go Test.go test gafroshka-main/internal/handlers">
