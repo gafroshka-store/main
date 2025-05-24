@@ -1,4 +1,4 @@
-package announcement_feedback_test
+package handlers_test
 
 import (
 	"bytes"

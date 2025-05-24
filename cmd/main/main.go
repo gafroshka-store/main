@@ -11,7 +11,7 @@ import (
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
-	"gafroshka-main/internal/user_feedback"
+	userFeedback "gafroshka-main/internal/user_feedback"
 	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"

@@ -1,4 +1,4 @@
-package userFeedback
+package userfeedback
 
 import (
 	"context"

@@ -7,7 +7,7 @@ import (
 	"gafroshka-main/internal/mocks"
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user_feedback"
-	"gafroshka-main/internal/user_feedback"
+	userFeedback "gafroshka-main/internal/user_feedback"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap/zaptest"
 	"net/http"

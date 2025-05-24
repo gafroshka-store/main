@@ -1,4 +1,4 @@
-package announcement_feedback
+package handlers
 
 import (
 	"encoding/json"
