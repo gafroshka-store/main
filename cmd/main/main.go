@@ -77,7 +77,7 @@ func main() {
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
-	userFeedbackRepository := user_feedback.NewUserFeedbackRepository(db, logger)
+	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 
 	// init router

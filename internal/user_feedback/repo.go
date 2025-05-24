@@ -1,4 +1,4 @@
-package user_feedback
+package userFeedback
 
 import (
 	"context"
@@ -19,9 +19,9 @@ type UserFeedbackRepository struct {
 	Logger *zap.SugaredLogger
 }
 
-func NewUserFeedbackRepository(DB *sql.DB, logger *zap.SugaredLogger) *UserFeedbackRepository {
+func NewUserFeedbackRepository(db *sql.DB, logger *zap.SugaredLogger) *UserFeedbackRepository {
 	return &UserFeedbackRepository{
-		DB:     DB,
+		DB:     db,
 		Logger: logger,
 	}
 }

@@ -27,13 +27,13 @@ func TestUserFeedbackHandler_Create(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		payload        user_feedback.UserFeedback
+		payload        userFeedback.UserFeedback
 		mockBehavior   func()
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			payload: user_feedback.UserFeedback{
+			payload: userFeedback.UserFeedback{
 				UserRecipientID: "user1",
 				UserWriterID:    "user2",
 				Comment:         "Great!",
@@ -42,7 +42,7 @@ func TestUserFeedbackHandler_Create(t *testing.T) {
 			mockBehavior: func() {
 				mockRepo.EXPECT().
 					Create(gomock.Any(), gomock.Any()).
-					Return(&user_feedback.UserFeedback{
+					Return(&userFeedback.UserFeedback{
 						ID:              "123",
 						UserRecipientID: "user1",
 						UserWriterID:    "user2",
@@ -54,7 +54,7 @@ func TestUserFeedbackHandler_Create(t *testing.T) {
 		},
 		{
 			name: "invalid json",
-			payload: user_feedback.UserFeedback{
+			payload: userFeedback.UserFeedback{
 				UserRecipientID: "",
 			},
 			mockBehavior:   func() {},
@@ -111,7 +111,7 @@ func TestUserFeedbackHandler_GetByUserID(t *testing.T) {
 			mockBehavior: func() {
 				mockRepo.EXPECT().
 					GetByUserID(gomock.Any(), "user1").
-					Return([]*user_feedback.UserFeedback{}, nil)
+					Return([]*userFeedback.UserFeedback{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -170,7 +170,7 @@ func TestUserFeedbackHandler_Update(t *testing.T) {
 						Comment: "Updated!",
 						Rating:  4,
 					}).
-					Return(&user_feedback.UserFeedback{
+					Return(&userFeedback.UserFeedback{
 						ID:              "id1",
 						UserRecipientID: "userX",
 						UserWriterID:    "userY",
