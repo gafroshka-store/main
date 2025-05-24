@@ -5,14 +5,16 @@ import (
 	"fmt"
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
-	"gafroshka-main/internal/handlers"
+	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
+	handlersUser "gafroshka-main/internal/handlers/user"
+	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
+	userFeedback "gafroshka-main/internal/user_feedback"
+	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
-
-	"github.com/go-redis/redis/v8"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -75,23 +77,30 @@ func main() {
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
-	feedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
+	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
+	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 
 	// init router
 	r := mux.NewRouter()
 
 	// init handlers
-	userHandlers := handlers.NewUserHandler(logger, userRepository, sessionRepository)
-	feedbackHandlers := handlers.NewAnnouncementFeedbackHandler(logger, feedbackRepository)
+	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
+	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
+	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
 	authRouter.Use(middleware.Auth(sessionRepository))
 
-	authRouter.HandleFunc("/feedback", feedbackHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/feedback/{id}", feedbackHandlers.Delete).Methods("DELETE")
+	authRouter.HandleFunc("/feedback", annFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/feedback/{id}", annFeedbackHandlers.Delete).Methods("DELETE")
 
 	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
+
+	authRouter.HandleFunc("/feedback", userFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
+	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
+
 	// Ручки НЕ требующие авторизации
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
 
@@ -99,7 +108,9 @@ func main() {
 	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
 	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
 
-	noAuthRouter.HandleFunc("/feedback/announcement/{id}", feedbackHandlers.GetByAnnouncementID).Methods("GET")
+	noAuthRouter.HandleFunc("/feedback/user/{user_id}", userFeedbackHandlers.GetByUserID).Methods("GET")
+
+	noAuthRouter.HandleFunc("/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
 
 	logger.Infow("starting server",
 		"type", "START",

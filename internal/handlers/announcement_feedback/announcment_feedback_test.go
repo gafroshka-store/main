@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 
 	announcmentfeedback "gafroshka-main/internal/announcment_feedback"
-	hand "gafroshka-main/internal/handlers"
+	handlers "gafroshka-main/internal/handlers/announcement_feedback"
 	"gafroshka-main/internal/mocks"
 	myErr "gafroshka-main/internal/types/errors"
 
@@ -20,11 +20,11 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func setupHandler(t *testing.T) (*hand.AnnouncementFeedbackHandler, *mocks.MockFeedbackRepo, func()) {
+func setupHandler(t *testing.T) (*handlers.AnnouncementFeedbackHandler, *mocks.MockFeedbackRepo, func()) {
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockFeedbackRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := hand.NewAnnouncementFeedbackHandler(logger, mockRepo)
+	handler := handlers.NewAnnouncementFeedbackHandler(logger, mockRepo)
 	return handler, mockRepo, func() { ctrl.Finish() }
 }
 
