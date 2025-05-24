@@ -46,6 +46,15 @@ CREATE TABLE announcement_feedback (
     rating SMALLINT NOT NULL
 );
 
+CREATE TABLE shopping_cart (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    announcement_id UUID NOT NULL REFERENCES announcement(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, announcement_id)
+);
+
+
 CREATE INDEX idx_user_feedback_recipient ON user_feedback(user_recipient_id);
 CREATE INDEX idx_announcement_seller ON announcement(user_seller_id);
 CREATE INDEX idx_announcement_feedback_recipient ON announcement_feedback(announcement_recipient_id);
+CREATE INDEX idx_cart_user_id ON shopping_cart(user_id);
+CREATE INDEX idx_cart_announcement_id ON shopping_cart(announcement_id);

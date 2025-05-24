@@ -211,3 +211,50 @@ func (ur *UserDBRepository) ChangeProfile(userID string, updateUser types.Change
 
 	return ur.Info(userID) // Возвращаем обновлённые данные пользователя
 }
+
+// GetBalanceByUserID получает баланс пользователя по его id
+func (ur *UserDBRepository) GetBalanceByUserID(userID string) (int64, error) {
+	query := `
+	SELECT balance
+	FROM users
+	WHERE id = $1
+`
+
+	var balance int64
+	err := ur.DB.QueryRow(query, userID).Scan(&balance)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, myErr.ErrNotFound
+		}
+
+		return 0, err
+	}
+
+	return balance, nil
+}
+
+// TopUpBalance пополняет баланс пользователя на amount и возвращает баланс новый
+func (ur *UserDBRepository) TopUpBalance(userID string, amount int64) (int64, error) {
+	if amount <= 0 {
+		return 0, myErr.ErrInvalidAmount
+	}
+
+	query := `
+		UPDATE users
+		SET balance = balance + $1
+		WHERE id = $2
+		RETURNING balance
+	`
+
+	var newBalance int64
+	err := ur.DB.QueryRow(query, amount, userID).Scan(&newBalance)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, myErr.ErrNotFound
+		}
+		ur.Logger.Warnf("Ошибка при пополнении баланса: %v", err)
+		return 0, myErr.ErrDBInternal
+	}
+
+	return newBalance, nil
+}

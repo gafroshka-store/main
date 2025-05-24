@@ -2,6 +2,7 @@ package announcement
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 
 	types "gafroshka-main/internal/types/announcement"
@@ -248,4 +249,51 @@ func (ar *AnnouncementDBRepository) UpdateRating(id string, rate int) (*Announce
 	}
 
 	return &updated, nil
+}
+
+func (ar *AnnouncementDBRepository) GetInfoForShoppingCart(ids []string) ([]types.InfoForSC, error) {
+	if len(ids) == 0 {
+		// Если нет id, сразу возвращаем пустой слайс
+		return []types.InfoForSC{}, nil
+	}
+
+	// Формируем плейсхолдеры для IN ($1, $2, ..., $n)
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		placeholders[i] = "$" + fmt.Sprint(i+1)
+		args[i] = id
+	}
+
+	query := `
+	SELECT id, name, price, discount, is_active, rating
+	FROM announcement
+	WHERE id IN (` + strings.Join(placeholders, ",") + `)
+	`
+
+	rows, err := ar.DB.Query(query, args...)
+	if err != nil {
+		ar.Logger.Errorf("Error getting info for shopping card: %v", err)
+		return nil, errors.ErrDBInternal
+	}
+	defer rows.Close()
+
+	var infos []types.InfoForSC
+	for rows.Next() {
+		var info types.InfoForSC
+		if err := rows.Scan(
+			&info.ID,
+			&info.Name,
+			&info.Price,
+			&info.Discount,
+			&info.IsActive,
+			&info.Rating,
+		); err != nil {
+			ar.Logger.Errorf("Error scanning row in GetInfoForShoppingCard: %v", err)
+			return nil, errors.ErrDBInternal
+		}
+		infos = append(infos, info)
+	}
+
+	return infos, nil
 }

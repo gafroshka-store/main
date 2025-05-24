@@ -18,8 +18,9 @@ var (
 	ErrSessionIsExpired = errors.New("session is expired")
 	ErrNoAuth           = errors.New("authorization required")
 
-	ErrBadPassword = errors.New("bad password")
-	ErrBadID       = errors.New("bad id")
+	ErrBadPassword   = errors.New("bad password")
+	ErrBadID         = errors.New("bad id")
+	ErrInvalidAmount = errors.New("invalid amount")
 
 	ErrNotFoundUserFeedback = errors.New("user feedback not found")
 	ErrRatingIsInvalid      = errors.New("rating must be between 1 and 5")

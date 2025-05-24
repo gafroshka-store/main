@@ -174,3 +174,86 @@ func (h *UserHandler) ChangeProfile(w http.ResponseWriter, r *http.Request) {
 
 	h.Logger.Infof("user profile updated successfully: %s", userID)
 }
+
+func (h *UserHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userID := vars["id"]
+
+	_, err := uuid.Parse(userID)
+	if err != nil {
+		myErr.SendErrorTo(w, myErr.ErrBadID, http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	balance, err := h.UserRepository.GetBalanceByUserID(userID)
+	if err != nil {
+		if errors.Is(err, myErr.ErrNotFound) {
+			myErr.SendErrorTo(w, err, http.StatusNotFound, h.Logger)
+			return
+		}
+		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		return
+	}
+
+	resp := types.Balance{
+		Balance: balance,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		return
+	}
+
+	h.Logger.Infof("retrieved balance for user %s: %d", userID, balance)
+}
+
+type TopUpRequest struct {
+	Amount int64 `json:"amount"`
+}
+
+func (h *UserHandler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userID := vars["id"]
+
+	_, err := uuid.Parse(userID)
+	if err != nil {
+		myErr.SendErrorTo(w, myErr.ErrBadID, http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	var req TopUpRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		myErr.SendErrorTo(w, errors.New("invalid JSON payload"), http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	newBalance, err := h.UserRepository.TopUpBalance(userID, req.Amount)
+	if err != nil {
+		switch {
+		case errors.Is(err, myErr.ErrInvalidAmount):
+			myErr.SendErrorTo(w, err, http.StatusBadRequest, h.Logger)
+			return
+		case errors.Is(err, myErr.ErrNotFound):
+			myErr.SendErrorTo(w, err, http.StatusNotFound, h.Logger)
+			return
+		default:
+			myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+			return
+		}
+	}
+
+	resp := types.Balance{
+		Balance: newBalance,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		return
+	}
+
+	h.Logger.Infof("user %s topped up balance, new balance: %d", userID, newBalance)
+}

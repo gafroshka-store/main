@@ -14,7 +14,7 @@ stop-hard:
 	docker-compose down -v
 
 lint:
-	golangci-lint run --config .golint.yaml
+	golangci-lint run --config .golangci.yml
 
 tests:
 	go test -v -cover ./...

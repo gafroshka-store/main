@@ -2,6 +2,7 @@ package announcement
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"regexp"
@@ -700,6 +701,96 @@ func TestAnnouncementDBRepository_UpdateRating(t *testing.T) {
 			tt.mock()
 
 			result, err := repo.UpdateRating(tt.id, tt.rate)
+			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expectError, err)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestAnnouncementDBRepository_GetInfoForShoppingCart(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	logger := zaptest.NewLogger(t).Sugar()
+	repo := NewAnnouncementDBRepository(db, logger)
+
+	tests := []struct {
+		name        string
+		ids         []string
+		mock        func()
+		expected    []types.InfoForSC
+		expectError error
+	}{
+		{
+			name: "success",
+			ids:  []string{"1", "2"},
+			mock: func() {
+				values := [][]driver.Value{
+					{"1", "test1", 10, 0, true, 5.0},
+					{"2", "test2", 100, 10, true, 5.0},
+				}
+
+				mock.ExpectQuery(regexp.QuoteMeta(
+					"SELECT id, name, price, discount, is_active, rating FROM announcement WHERE id IN ($1,$2)",
+				)).
+					WithArgs("1", "2").
+					WillReturnRows(sqlmock.NewRows([]string{
+						"id", "name", "price", "discount", "is_active", "rating",
+					}).AddRows(values...))
+			},
+			expected: []types.InfoForSC{
+				{ID: "1", Name: "test1", Price: 10, Discount: 0, IsActive: true, Rating: 5.0},
+				{ID: "2", Name: "test2", Price: 100, Discount: 10, IsActive: true, Rating: 5.0},
+			},
+			expectError: nil,
+		},
+		{
+			name: "empty ids returns empty slice without query",
+			ids:  []string{},
+			mock: func() {
+				// Не ожидаем никаких запросов
+			},
+			expected:    []types.InfoForSC{},
+			expectError: nil,
+		},
+		{
+			name: "db query error",
+			ids:  []string{"1"},
+			mock: func() {
+				mock.ExpectQuery(regexp.QuoteMeta(
+					"SELECT id, name, price, discount, is_active, rating FROM announcement WHERE id IN ($1)",
+				)).
+					WithArgs("1").
+					WillReturnError(fmt.Errorf("some db error"))
+			},
+			expected:    nil,
+			expectError: customErrors.ErrDBInternal,
+		},
+		{
+			name: "scan error",
+			ids:  []string{"1"},
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "name", "price", "discount", "is_active", "rating"}).
+					AddRow("1", "test1", "WRONG_TYPE_INSTEAD_OF_INT", 0, true, 5.0)
+				mock.ExpectQuery(regexp.QuoteMeta(
+					"SELECT id, name, price, discount, is_active, rating FROM announcement WHERE id IN ($1)",
+				)).
+					WithArgs("1").
+					WillReturnRows(rows)
+			},
+			expected:    nil,
+			expectError: customErrors.ErrDBInternal,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mock()
+
+			result, err := repo.GetInfoForShoppingCart(tt.ids)
 			assert.Equal(t, tt.expected, result)
 			assert.Equal(t, tt.expectError, err)
 			assert.NoError(t, mock.ExpectationsWereMet())

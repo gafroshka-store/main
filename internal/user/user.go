@@ -29,7 +29,7 @@ type User struct {
 
 // UserRepo интерфейс удовлетворяющий методам сущности пользователя
 //
-//go:generate mockgen -source=internal/user/user.go -destination=internal/mocks/mock_user_repo.go -package=mocks
+//go:generate mockgen -source=user.go -destination=../mocks/mock_user_repo.go -package=mocks
 type UserRepo interface {
 	// CheckUser - проверяет пользователя по почте и паролю
 	CheckUser(email, password string) (*User, error)
@@ -39,4 +39,8 @@ type UserRepo interface {
 	Info(userID string) (*User, error)
 	// ChangeProfile меняет поля пользователя с userID по updateUser
 	ChangeProfile(userID string, updateUser types.ChangeUser) (*User, error)
+	// GetBalanceByUserID получает баланс пользователя по его id
+	GetBalanceByUserID(userID string) (int64, error)
+	// TopUpBalance пополняет баланс пользователя на amount и возвращает баланс новый
+	TopUpBalance(userID string, amount int64) (int64, error)
 }
