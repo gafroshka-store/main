@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="AutoImportSettings">
-    <option name="autoReloadType" value="ALL" />
+    <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="" />
@@ -77,6 +77,42 @@
       <root_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
       <package value="gafroshka-main/internal/announcement" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAnnouncementHandler_GetTopN\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestAnnouncementHandler_UpdateRating in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAnnouncementHandler_UpdateRating\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestAnnouncementHandler_UpdateRating/NegativeRating in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAnnouncementHandler_UpdateRating\E$/^\QNegativeRating\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
