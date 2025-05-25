@@ -35,21 +35,6 @@ func (m *MockUserRepo) EXPECT() *MockUserRepoMockRecorder {
 	return m.recorder
 }
 
-// Authorize mocks base method.
-func (m *MockUserRepo) Authorize(login, password string) (*user0.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Authorize", login, password)
-	ret0, _ := ret[0].(*user0.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Authorize indicates an expected call of Authorize.
-func (mr *MockUserRepoMockRecorder) Authorize(login, password interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authorize", reflect.TypeOf((*MockUserRepo)(nil).Authorize), login, password)
-}
-
 // ChangeProfile mocks base method.
 func (m *MockUserRepo) ChangeProfile(userID string, updateUser user.ChangeUser) (*user0.User, error) {
 	m.ctrl.T.Helper()
@@ -63,6 +48,36 @@ func (m *MockUserRepo) ChangeProfile(userID string, updateUser user.ChangeUser) 
 func (mr *MockUserRepoMockRecorder) ChangeProfile(userID, updateUser interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeProfile", reflect.TypeOf((*MockUserRepo)(nil).ChangeProfile), userID, updateUser)
+}
+
+// CheckUser mocks base method.
+func (m *MockUserRepo) CheckUser(email, password string) (*user0.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckUser", email, password)
+	ret0, _ := ret[0].(*user0.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckUser indicates an expected call of CheckUser.
+func (mr *MockUserRepoMockRecorder) CheckUser(email, password interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUser", reflect.TypeOf((*MockUserRepo)(nil).CheckUser), email, password)
+}
+
+// CreateUser mocks base method.
+func (m *MockUserRepo) CreateUser(u user.CreateUser) (*user0.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUser", u)
+	ret0, _ := ret[0].(*user0.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockUserRepoMockRecorder) CreateUser(u interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockUserRepo)(nil).CreateUser), u)
 }
 
 // Info mocks base method.

@@ -9,8 +9,24 @@ import (
 )
 
 var (
-	ErrDBInternal = errors.New("ошибка внутри базы")
-	ErrNotFound   = errors.New("запись не найдена ")
+	ErrDBInternal       = errors.New("database internal error")
+	ErrNotFound         = errors.New("record not found")
+	ErrAlreadyExists    = errors.New("record already exists")
+	ErrNotFoundFeedback = errors.New("can't find a feedback with this ID")
+	ErrInvalidRating    = errors.New("the rating should be from 1 to 5")
+	ErrSessionNotFound  = errors.New("session not found")
+	ErrSessionIsExpired = errors.New("session is expired")
+	ErrNoAuth           = errors.New("authorization required")
+
+	ErrBadPassword = errors.New("bad password")
+	ErrBadID       = errors.New("bad id")
+
+	ErrNotFoundUserFeedback = errors.New("user feedback not found")
+	ErrRatingIsInvalid      = errors.New("rating must be between 1 and 5")
+	ErrCommentIsTooLong     = errors.New("comment must be less than 1000 characters")
+	ErrMissingFeedbackID    = errors.New("feedback id is missing")
+
+	ErrInvalidJSONPayload = errors.New("invalid JSON payload")
 )
 
 type ErrorServer struct {
@@ -22,6 +38,7 @@ func (e *ErrorServer) Error() string {
 }
 
 /*
+NewErrorServer
 Функция имеет возможность принимать "nil ошибку"
 при получении nil наша функция понимает, что нам
 просто надо отдать саксесс клиенту

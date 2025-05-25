@@ -7,3 +7,4 @@ db:
 max_open_conns: 10
 secret: mysuperpupermegaultraSecret
 srv_port: :8080
+session_duration: 1h

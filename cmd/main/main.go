@@ -4,9 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
+
+	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
-	"gafroshka-main/internal/handlers"
+	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
+	handlersUser "gafroshka-main/internal/handlers/user"
+	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
+	"gafroshka-main/internal/middleware"
+	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
+	userFeedback "gafroshka-main/internal/user_feedback"
+	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
 
@@ -17,7 +25,8 @@ import (
 )
 
 const (
-	cfgPath = "config/config.yaml"
+	cfgPath   = "config/config.yaml"
+	RedisAddr = "redis:6379"
 )
 
 func main() {
@@ -56,25 +65,59 @@ func main() {
 		logger.Infof("Failed to get response to ping: %v", err)
 	}
 
-	// init repositories
-	userRepo := user.NewUserDBRepository(db, logger)
-	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
+	// init redis
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     RedisAddr,
+		Password: "",
+		DB:       0, // стандартная БД
+	})
 
-	// init handlers
-	userHandler := handlers.NewUserHandler(logger, userRepo)
-	annHandler := handlers.NewAnnouncementHandler(logger, annRepo)
+	// init repository
+	userRepository := user.NewUserDBRepository(db, logger)
+	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
+	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
+ 	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
+	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 
 	// init router
 	r := mux.NewRouter()
-	// user routes
-	r.HandleFunc("/user/{id}", userHandler.Info).Methods("GET")
-	r.HandleFunc("/user/{id}", userHandler.ChangeProfile).Methods("PUT")
-	// announcement routes
-	r.HandleFunc("/announcement", annHandler.Create).Methods("POST")
-	r.HandleFunc("/announcement/{id}", annHandler.GetByID).Methods("GET")
-	r.HandleFunc("/announcements/top", annHandler.GetTopN).Methods("POST")
-	r.HandleFunc("/announcements/search", annHandler.Search).Methods("GET")
-	r.HandleFunc("/announcement/{id}/rating", annHandler.UpdateRating).Methods("POST")
+
+	// init handlers
+	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
+	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
+	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
+  annHandlers := handlers.NewAnnouncementHandler(logger, annRepo)
+
+	// Ручки требующие авторизации
+	authRouter := r.PathPrefix("/api").Subrouter()
+	authRouter.Use(middleware.Auth(sessionRepository))
+
+	authRouter.HandleFunc("/feedback", annFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/feedback/{id}", annFeedbackHandlers.Delete).Methods("DELETE")
+
+	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
+
+	authRouter.HandleFunc("/feedback", userFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
+	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
+  
+  authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/announcement/{id}/rating", annHandlers.UpdateRating).Methods("POST")
+
+	// Ручки НЕ требующие авторизации
+	noAuthRouter := r.PathPrefix("/api").Subrouter()
+
+	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
+	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
+	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
+
+	noAuthRouter.HandleFunc("/feedback/user/{user_id}", userFeedbackHandlers.GetByUserID).Methods("GET")
+
+	noAuthRouter.HandleFunc("/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
+  
+  noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
+  noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")
+	noAuthRouter.HandleFunc("/announcements/search", annHandlers.Search).Methods("GET")
 
 	logger.Infow("starting server",
 		"type", "START",

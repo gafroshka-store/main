@@ -4,32 +4,91 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cadd2091-b969-4e2c-b1c4-e68a35f8de3c" name="Changes" comment="" />
+    <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/internal/types/user_feedback/user_feedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/user_feedback/user_feedback.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/user_feedback/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/repo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/user_feedback/user_feedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/user_feedback.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/user_feedback/user_feedback_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/user_feedback/user_feedback_test.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../../Program Files/Go" />
+  <component name="Git.Pull.Settings">
+    <option name="OPTIONS">
+      <set>
+        <option value="REBASE" />
+      </set>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
+  <component name="ProjectId" id="2utmDzHfIWcfR59wtxBRwls9aoU" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "Go Test.TestAnnouncementHandler_Create in gafroshka-main/internal/handlers.executor": "Run",
-    "Go Test.TestAnnouncementHandler_Create/InternalError in gafroshka-main/internal/handlers.executor": "Run",
-    "Go Test.TestAnnouncementHandler_GetByID in gafroshka-main/internal/handlers.executor": "Run",
-    "Go Test.TestAnnouncementHandler_GetByID/InvalidID in gafroshka-main/internal/handlers.executor": "Run",
-    "Go Test.TestAnnouncementHandler_GetTopN in gafroshka-main/internal/handlers.executor": "Run",
-    "Go Test.TestAnnouncementHandler_UpdateRating in gafroshka-main/internal/handlers.executor": "Run",
-    "Go Test.TestAnnouncementHandler_UpdateRating/NegativeRating in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestAnnouncementDBRepository_Search/result_limit_enforcement in gafroshka-main/internal/announcement.executor": "Run",
+    "Go Test.TestCreateSession in gafroshka-main/internal/session.executor": "Run",
+    "Go Test.TestUserDBRepository_CheckUser in gafroshka-main/internal/user.executor": "Run",
+    "Go Test.TestUserDBRepository_CreateUser in gafroshka-main/internal/user.executor": "Run",
+    "Go Test.TestUserDBRepository_CreateUser/check_user_returns_internal_error in gafroshka-main/internal/user.executor": "Run",
+    "Go Test.TestUserDBRepository_CreateUser/successfully_create_user in gafroshka-main/internal/user.executor": "Run",
+    "Go Test.TestUserHandler_ChangeProfile/Invalid_ID in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestUserHandler_Info in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestUserHandler_Info/Invalid_ID in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestUserHandler_Info/Success in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestUserHandler_Login in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestUserHandler_Register in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestUserHandler_Register/Success in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.go test gafroshka-main/internal/announcement.executor": "Run",
     "Go Test.go test gafroshka-main/internal/handlers.executor": "Run",
-    "git-widget-placeholder": "feature/announcement__handlers",
+    "Go Test.go test gafroshka-main/internal/session.executor": "Run",
+    "Go Test.go test gafroshka-main/internal/user.executor": "Run",
+    "HTTP Request.generated-requests | #1.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "git-widget-placeholder": "feature/feedback__on__seller",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "C:/Users/BaronPipistron",
     "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)"
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.keymap"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "postgresql"
+    ]
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/internal" />
+      <recent name="$PROJECT_DIR$/db" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\BaronPipistron\Desktop\GoProject\main\internal\handlers\announcement_feedback" />
+    </key>
+  </component>
   <component name="RunManager" selected="Go Test.go test gafroshka-main/internal/handlers">
-    <configuration name="TestAnnouncementHandler_GetByID in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestUserHandler_ChangeProfile/Invalid_ID in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="main" />
       <working_directory value="$PROJECT_DIR$/internal/handlers" />
       <root_directory value="$PROJECT_DIR$" />
@@ -38,10 +97,46 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestAnnouncementHandler_GetByID\E$" />
+      <pattern value="^\QTestUserHandler_ChangeProfile\E$/^\QInvalid_ID\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestAnnouncementHandler_GetTopN in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestUserHandler_Info in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestUserHandler_Info\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestUserHandler_Info/Invalid_ID in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestUserHandler_Info\E$/^\QInvalid_ID\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestUserHandler_Info/Success in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestUserHandler_Info\E$/^\QSuccess\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="main" />
       <working_directory value="$PROJECT_DIR$/internal/handlers" />
       <root_directory value="$PROJECT_DIR$" />
@@ -91,11 +186,26 @@
     <recent_temporary>
       <list>
         <item itemvalue="Go Test.go test gafroshka-main/internal/handlers" />
-        <item itemvalue="Go Test.TestAnnouncementHandler_UpdateRating in gafroshka-main/internal/handlers" />
-        <item itemvalue="Go Test.TestAnnouncementHandler_UpdateRating/NegativeRating in gafroshka-main/internal/handlers" />
-        <item itemvalue="Go Test.TestAnnouncementHandler_GetTopN in gafroshka-main/internal/handlers" />
-        <item itemvalue="Go Test.TestAnnouncementHandler_GetByID in gafroshka-main/internal/handlers" />
+        <item itemvalue="Go Test.TestUserHandler_ChangeProfile/Invalid_ID in gafroshka-main/internal/handlers" />
+        <item itemvalue="Go Test.TestUserHandler_Info/Invalid_ID in gafroshka-main/internal/handlers" />
+        <item itemvalue="Go Test.TestUserHandler_Info in gafroshka-main/internal/handlers" />
+        <item itemvalue="Go Test.TestUserHandler_Info/Success in gafroshka-main/internal/handlers" />
       </list>
     </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-gosdk-5df93f7ad4aa-df9ad98b711f-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-242.23339.24" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-GO-242.23339.24" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
   </component>
 </project>

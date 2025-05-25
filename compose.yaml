@@ -1,13 +1,18 @@
 services:
   app:
-    build: .
+#    image: golang:1.23
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     ports:
       - "8080:8080"
     networks:
       - shared-network
     depends_on:
       db:
-        condition: service_healthy  
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   db:
     image: postgres:17
@@ -21,7 +26,7 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./db_migration/*:/docker-entrypoint-initdb.d
+      - ./db:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d store"]
       interval: 5s  
@@ -31,8 +36,25 @@ services:
     networks:
       - shared-network
 
+  redis:
+    image: redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    ports:
+      - '6379:6379'
+    command: [ "redis-server", "--appendonly", "yes" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    networks:
+      - shared-network
+
 volumes:
   db_data:
+  redis_data:
 
 networks:
   shared-network:

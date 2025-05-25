@@ -2,15 +2,17 @@ package app
 
 import (
 	"os"
+	"time"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	CfgDB        ConfigDB `yaml:"db"`
-	MaxOpenConns int      `yaml:"max_open_conns"`
-	Secret       string   `yaml:"secret"`
-	ServerPort   string   `yaml:"srv_port"`
+	CfgDB           ConfigDB      `yaml:"db"`
+	MaxOpenConns    int           `yaml:"max_open_conns"`
+	Secret          string        `yaml:"secret"`
+	ServerPort      string        `yaml:"srv_port"`
+	SessionDuration time.Duration `yaml:"session_duration"`
 }
 
 type ConfigDB struct {
