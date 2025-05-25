@@ -98,7 +98,7 @@ func (h *ShoppingCartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 			resp := []typesAnn.InfoForSC{}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNoContent)
-			err := json.NewEncoder(w).Encode(resp)
+			err = json.NewEncoder(w).Encode(resp)
 			if err != nil {
 				h.Logger.Warnw("error writing response", "err", err)
 				return

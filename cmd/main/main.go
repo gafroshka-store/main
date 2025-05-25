@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
+
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
+	elastic "gafroshka-main/internal/elastic_search"
+	"gafroshka-main/internal/etl"
+	"gafroshka-main/internal/handlers"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
 	handlersCart "gafroshka-main/internal/handlers/shopping_cart"
 	handlersUser "gafroshka-main/internal/handlers/user"
@@ -15,9 +20,12 @@ import (
 	cart "gafroshka-main/internal/shopping_cart"
 	"gafroshka-main/internal/user"
 	userFeedback "gafroshka-main/internal/user_feedback"
-	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
+
+	"github.com/go-redis/redis/v8"
+
+	"github.com/elastic/go-elasticsearch/v8"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -28,6 +36,7 @@ import (
 const (
 	cfgPath   = "config/config.yaml"
 	RedisAddr = "redis:6379"
+	ESAddr    = "http://elasticsearch:9200"
 )
 
 func main() {
@@ -36,8 +45,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	logger := zapLogger.Sugar()
-	//	тк функция откладывается буду использовать
+
+	// тк функция откладывается буду использовать
 	// обертку в анонимную функцию
 	defer func() {
 		err = zapLogger.Sync()
@@ -77,11 +88,38 @@ func main() {
 		DB:       0, // стандартная БД
 	})
 
+	// init ES
+	elasticClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{
+			ESAddr,
+		},
+	})
+	if err != nil {
+		logger.Errorf("failed to create elastic client: %v", err)
+	}
+
+	_, err = elasticClient.Ping()
+	if err != nil {
+		logger.Warnf("failed to ping Elasticsearch: %v", err)
+	}
+
+	elasicService := elastic.NewService(elasticClient, logger, c.CfgES.Index)
+
+	// init and start ETL
+	extractor := etl.NewPostgresExtractor(db, logger)
+	transformer := etl.NewTransformer(logger)
+	loader := etl.NewElasticLoader(elasicService, logger)
+
+	pipeline := etl.NewPipeline(extractor, transformer, loader, logger, c.ETLTimeout)
+
+	go pipeline.Run(context.Background())
+
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
 	announcementRepository := announcement.NewAnnouncementDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
 	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
+	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 	shoppingCartRepository := cart.NewShoppingCartRepository(db, logger)
 
@@ -92,6 +130,7 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
+	annHandlers := handlers.NewAnnouncementHandler(logger, annRepo)
 	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository)
 
 	// Ручки требующие авторизации
@@ -108,6 +147,9 @@ func main() {
 	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
 	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
 
+	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/announcement/{id}/rating", annHandlers.UpdateRating).Methods("POST")
+
 	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST")
 	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.DeleteFromShoppingCart).Methods("DELETE")
 	authRouter.HandleFunc("/cart/{userID}", shoppingCartHandlers.GetCart).Methods("GET")
@@ -123,6 +165,10 @@ func main() {
 	noAuthRouter.HandleFunc("/feedback/user/{user_id}", userFeedbackHandlers.GetByUserID).Methods("GET")
 
 	noAuthRouter.HandleFunc("/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
+
+	noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
+	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")
+	noAuthRouter.HandleFunc("/announcements/search", annHandlers.Search).Methods("GET")
 
 	logger.Infow("starting server",
 		"type", "START",

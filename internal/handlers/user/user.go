@@ -224,7 +224,7 @@ func (h *UserHandler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req TopUpRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
 		myErr.SendErrorTo(w, errors.New("invalid JSON payload"), http.StatusBadRequest, h.Logger)
 		return
 	}

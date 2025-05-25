@@ -28,6 +28,8 @@ var (
 	ErrMissingFeedbackID    = errors.New("feedback id is missing")
 
 	ErrInvalidJSONPayload = errors.New("invalid JSON payload")
+
+	ErrIndexing = errors.New("indexing error")
 )
 
 type ErrorServer struct {
