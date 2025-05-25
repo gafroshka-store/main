@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="cadd2091-b969-4e2c-b1c4-e68a35f8de3c" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Go Test.TestAnnouncementHandler_Create in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestAnnouncementHandler_Create/InternalError in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestAnnouncementHandler_GetByID in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestAnnouncementHandler_GetByID/InvalidID in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestAnnouncementHandler_GetTopN in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestAnnouncementHandler_UpdateRating in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.TestAnnouncementHandler_UpdateRating/NegativeRating in gafroshka-main/internal/handlers.executor": "Run",
+    "Go Test.go test gafroshka-main/internal/handlers.executor": "Run",
+    "git-widget-placeholder": "feature/announcement__handlers",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)"
+  }
+}]]></component>
+  <component name="RunManager" selected="Go Test.go test gafroshka-main/internal/handlers">
+    <configuration name="TestAnnouncementHandler_GetByID in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAnnouncementHandler_GetByID\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestAnnouncementHandler_GetTopN in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAnnouncementHandler_GetTopN\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestAnnouncementHandler_UpdateRating in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAnnouncementHandler_UpdateRating\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestAnnouncementHandler_UpdateRating/NegativeRating in gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAnnouncementHandler_UpdateRating\E$/^\QNegativeRating\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test gafroshka-main/internal/handlers" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="main" />
+      <working_directory value="$PROJECT_DIR$/internal/handlers" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="gafroshka-main/internal/handlers" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.go test gafroshka-main/internal/handlers" />
+        <item itemvalue="Go Test.TestAnnouncementHandler_UpdateRating in gafroshka-main/internal/handlers" />
+        <item itemvalue="Go Test.TestAnnouncementHandler_UpdateRating/NegativeRating in gafroshka-main/internal/handlers" />
+        <item itemvalue="Go Test.TestAnnouncementHandler_GetTopN in gafroshka-main/internal/handlers" />
+        <item itemvalue="Go Test.TestAnnouncementHandler_GetByID in gafroshka-main/internal/handlers" />
+      </list>
+    </recent_temporary>
+  </component>
+</project>
