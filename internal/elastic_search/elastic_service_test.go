@@ -124,44 +124,44 @@ func TestBulkIndex(t *testing.T) {
 		mockFn      func(req *http.Request) (*http.Response, error)
 		expectedErr error
 	}{
-		//{
-		//	name: "successful bulk indexing",
-		//	docs: []esDoc.ElasticDoc{
 		//		{
-		//			ID:          "test-id-1",
-		//			Title:       "test-title-1",
-		//			Description: "test-description-1",
-		//			Category:    1,
-		//		},
-		//		{
-		//			ID:          "test-id-2",
-		//			Title:       "test-title-2",
-		//			Description: "test-description-2",
-		//			Category:    2,
-		//		},
-		//	},
-		//	mockFn: func(req *http.Request) (*http.Response, error) {
-		//		if req.Method == "GET" && req.URL.Path == "/_cluster/health" {
-		//			return &http.Response{
-		//				StatusCode: 200,
-		//				Header:     http.Header{"X-elastic-product": []string{"Elasticsearch"}},
-		//				Body:       io.NopCloser(strings.NewReader(`{"status":"green"}`)),
-		//			}, nil
-		//		}
+		//			name: "successful bulk indexing",
+		//			docs: []esDoc.ElasticDoc{
+		//				{
+		//					ID:          "test-id-1",
+		//					Title:       "test-title-1",
+		//					Description: "test-description-1",
+		//					Category:    1,
+		//				},
+		//				{
+		//					ID:          "test-id-2",
+		//					Title:       "test-title-2",
+		//					Description: "test-description-2",
+		//					Category:    2,
+		//				},
+		//			},
+		//			mockFn: func(req *http.Request) (*http.Response, error) {
+		//				if req.Method == "GET" && req.URL.Path == "/_cluster/health" {
+		//					return &http.Response{
+		//						StatusCode: 200,
+		//						Header:     http.Header{"X-elastic-product": []string{"Elasticsearch"}},
+		//						Body:       io.NopCloser(strings.NewReader(`{"status":"green"}`)),
+		//					}, nil
+		//				}
 		//
-		//		body, err := io.ReadAll(req.Body)
-		//		assert.NoError(t, err)
-		//		assert.Contains(t, string(body), `"_id":"test-id-1"`)
-		//		assert.Contains(t, string(body), `"_id":"test-id-2"`)
+		//				body, err := io.ReadAll(req.Body)
+		//				assert.NoError(t, err)
+		//				assert.Contains(t, string(body), `"_id":"test-id-1"`)
+		//				assert.Contains(t, string(body), `"_id":"test-id-2"`)
 		//
-		//		return &http.Response{
-		//			StatusCode: http.StatusOK,
-		//			Header:     http.Header{"X-elastic-product": []string{"Elasticsearch"}},
-		//			Body:       io.NopCloser(strings.NewReader(`{}`)),
-		//		}, nil
-		//	},
-		//	expectedErr: nil,
-		//},
+		//				return &http.Response{
+		//					StatusCode: http.StatusOK,
+		//					Header:     http.Header{"X-elastic-product": []string{"Elasticsearch"}},
+		//					Body:       io.NopCloser(strings.NewReader(`{}`)),
+		//				}, nil
+		//			},
+		//			expectedErr: nil,
+		//		},
 		{
 			name: "empty docs array",
 			docs: []esDoc.ElasticDoc{},
