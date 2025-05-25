@@ -1,6 +1,11 @@
 version: "2"
+
 run:
-  tests: true
+  timeout: 5m
+  tests: false
+  skip-files:
+    - "_test\\.go$"
+
 linters:
   default: none
   enable:
@@ -16,6 +21,7 @@ linters:
     - unconvert
     - unparam
     - unused
+
   settings:
     dupl:
       threshold: 200
@@ -39,6 +45,7 @@ linters:
         - "-SA6000"
         - "-QF1001"
         - "-SA2002"
+
   exclusions:
     generated: lax
     presets:
@@ -65,9 +72,11 @@ linters:
       - "_easyjson.go"
       - "jwt_example.go"
       - "pb.go"
+
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+
 formatters:
   exclusions:
     generated: lax

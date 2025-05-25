@@ -8,20 +8,21 @@ import (
 
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
-	"gafroshka-main/internal/elastic_search"
+	elastic "gafroshka-main/internal/elastic_search"
 	"gafroshka-main/internal/etl"
+	"gafroshka-main/internal/handlers"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
 	handlersUser "gafroshka-main/internal/handlers/user"
 	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
-	"gafroshka-main/internal/handlers"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
 	userFeedback "gafroshka-main/internal/user_feedback"
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
+
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/go-redis/redis/v8"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -43,11 +44,12 @@ func main() {
 	}
 
 	logger := zapLogger.Sugar()
-  
+
 	// тк функция откладывается буду использовать
 	// обертку в анонимную функцию
 	defer func() {
-		if err := zapLogger.Sync(); err != nil {
+		err = zapLogger.Sync()
+		if err != nil {
 			logger.Warnf("error to sync logger: %v", err)
 		}
 	}()
@@ -70,7 +72,8 @@ func main() {
 	}
 
 	db.SetMaxOpenConns(c.MaxOpenConns)
-	if err := db.Ping(); err != nil {
+	err = db.Ping()
+	if err != nil {
 		logger.Infof("Failed to get response to ping: %v", err)
 	}
 
@@ -111,7 +114,7 @@ func main() {
 	userRepository := user.NewUserDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
 	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
- 	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
+	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 
 	// init router
@@ -121,7 +124,7 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-  	annHandlers := handlers.NewAnnouncementHandler(logger, annRepo)
+	annHandlers := handlers.NewAnnouncementHandler(logger, annRepo)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
@@ -135,8 +138,8 @@ func main() {
 	authRouter.HandleFunc("/feedback", userFeedbackHandlers.Create).Methods("POST")
 	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
 	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
-  
-  authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
+
+	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
 	authRouter.HandleFunc("/announcement/{id}/rating", annHandlers.UpdateRating).Methods("POST")
 
 	// Ручки НЕ требующие авторизации
@@ -149,9 +152,9 @@ func main() {
 	noAuthRouter.HandleFunc("/feedback/user/{user_id}", userFeedbackHandlers.GetByUserID).Methods("GET")
 
 	noAuthRouter.HandleFunc("/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
-  
-  noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
-  noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")
+
+	noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
+	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")
 	noAuthRouter.HandleFunc("/announcements/search", annHandlers.Search).Methods("GET")
 
 	logger.Infow("starting server",
