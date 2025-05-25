@@ -17,6 +17,7 @@ import (
 )
 
 func setupTestRepo(t *testing.T) (*SessionRepository, *miniredis.Miniredis) {
+	t.Helper()
 	mr, err := miniredis.Run()
 	assert.NoError(t, err)
 
@@ -30,6 +31,7 @@ func setupTestRepo(t *testing.T) (*SessionRepository, *miniredis.Miniredis) {
 }
 
 func TestCreateSession(t *testing.T) {
+	t.Parallel()
 	repo, mr := setupTestRepo(t)
 	defer mr.Close()
 
@@ -61,6 +63,7 @@ func TestCreateSession(t *testing.T) {
 }
 
 func TestCheckSession_Success(t *testing.T) {
+	t.Parallel()
 	repo, mr := setupTestRepo(t)
 	defer mr.Close()
 
@@ -87,6 +90,7 @@ func TestCheckSession_Success(t *testing.T) {
 }
 
 func TestCheckSession_MissingAuthHeader(t *testing.T) {
+	t.Parallel()
 	repo, _ := setupTestRepo(t)
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -97,6 +101,7 @@ func TestCheckSession_MissingAuthHeader(t *testing.T) {
 }
 
 func TestCheckSession_InvalidToken(t *testing.T) {
+	t.Parallel()
 	repo, _ := setupTestRepo(t)
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -108,6 +113,7 @@ func TestCheckSession_InvalidToken(t *testing.T) {
 }
 
 func TestCheckSession_SessionExpired(t *testing.T) {
+	t.Parallel()
 	repo, mr := setupTestRepo(t)
 	defer mr.Close()
 
@@ -134,6 +140,7 @@ func TestCheckSession_SessionExpired(t *testing.T) {
 }
 
 func generateJWT(t *testing.T, secret, sessionID, userID string) string {
+	t.Helper()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"session_id": sessionID,
 		"id":         userID,

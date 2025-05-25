@@ -20,6 +20,7 @@ import (
 )
 
 func TestAnnouncementHandler_Create(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -81,7 +82,9 @@ func TestAnnouncementHandler_Create(t *testing.T) {
 	r.HandleFunc("/announcement", handler.Create).Methods("POST")
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockSetup()
 
 			body, _ := json.Marshal(tt.input)
@@ -96,6 +99,7 @@ func TestAnnouncementHandler_Create(t *testing.T) {
 }
 
 func TestAnnouncementHandler_GetByID(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -145,7 +149,9 @@ func TestAnnouncementHandler_GetByID(t *testing.T) {
 	r.HandleFunc("/announcement/{id}", h.GetByID)
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockSetup()
 
 			req := httptest.NewRequest(http.MethodGet, "/announcement/"+tt.id, nil)
@@ -157,6 +163,7 @@ func TestAnnouncementHandler_GetByID(t *testing.T) {
 }
 
 func TestAnnouncementHandler_GetTopN(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -231,6 +238,7 @@ func TestAnnouncementHandler_GetTopN(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
 
@@ -253,6 +261,7 @@ func TestAnnouncementHandler_GetTopN(t *testing.T) {
 }
 
 func TestAnnouncementHandler_Search(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -278,6 +287,7 @@ func TestAnnouncementHandler_Search(t *testing.T) {
 }
 
 func TestAnnouncementHandler_UpdateRating(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -354,7 +364,9 @@ func TestAnnouncementHandler_UpdateRating(t *testing.T) {
 	r.HandleFunc("/announcement/{id}/rating", h.UpdateRating)
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockSetup()
 
 			var body bytes.Buffer

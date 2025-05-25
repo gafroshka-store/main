@@ -1,9 +1,8 @@
-package handlers_test
+package handlers
 
 import (
 	"bytes"
 	"encoding/json"
-	handlers "gafroshka-main/internal/handlers/user_feedback"
 	"gafroshka-main/internal/mocks"
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user_feedback"
@@ -18,12 +17,13 @@ import (
 )
 
 func TestUserFeedbackHandler_Create(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockRepo := mocks.NewMockUserFeedbackRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := handlers.NewUserFeedbackHandler(logger, mockRepo)
+	handler := NewUserFeedbackHandler(logger, mockRepo)
 
 	tests := []struct {
 		name           string
@@ -63,7 +63,9 @@ func TestUserFeedbackHandler_Create(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			tc.mockBehavior()
 
 			var body *bytes.Buffer
@@ -92,12 +94,13 @@ func TestUserFeedbackHandler_Create(t *testing.T) {
 }
 
 func TestUserFeedbackHandler_GetByUserID(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockRepo := mocks.NewMockUserFeedbackRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := handlers.NewUserFeedbackHandler(logger, mockRepo)
+	handler := NewUserFeedbackHandler(logger, mockRepo)
 
 	tests := []struct {
 		name           string
@@ -125,7 +128,9 @@ func TestUserFeedbackHandler_GetByUserID(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			tc.mockBehavior()
 
 			req := httptest.NewRequest(http.MethodGet, "/feedback/"+tc.userID, nil)
@@ -143,12 +148,13 @@ func TestUserFeedbackHandler_GetByUserID(t *testing.T) {
 }
 
 func TestUserFeedbackHandler_Update(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockRepo := mocks.NewMockUserFeedbackRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := handlers.NewUserFeedbackHandler(logger, mockRepo)
+	handler := NewUserFeedbackHandler(logger, mockRepo)
 
 	tests := []struct {
 		name           string
@@ -199,7 +205,9 @@ func TestUserFeedbackHandler_Update(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			tc.mockBehavior()
 
 			bodyBytes, err := json.Marshal(tc.body)
@@ -222,12 +230,13 @@ func TestUserFeedbackHandler_Update(t *testing.T) {
 }
 
 func TestUserFeedbackHandler_Delete(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockRepo := mocks.NewMockUserFeedbackRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := handlers.NewUserFeedbackHandler(logger, mockRepo)
+	handler := NewUserFeedbackHandler(logger, mockRepo)
 
 	tests := []struct {
 		name           string
@@ -258,7 +267,9 @@ func TestUserFeedbackHandler_Delete(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			tc.mockBehavior()
 
 			req := httptest.NewRequest(http.MethodDelete, "/feedback/"+tc.feedbackID, nil)

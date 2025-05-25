@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
+	announcement2 "gafroshka-main/internal/handlers/announcement"
 
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	elastic "gafroshka-main/internal/elastic_search"
 	"gafroshka-main/internal/etl"
-	"gafroshka-main/internal/handlers"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
 	handlersCart "gafroshka-main/internal/handlers/shopping_cart"
 	handlersUser "gafroshka-main/internal/handlers/user"
@@ -130,7 +130,7 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-	annHandlers := handlers.NewAnnouncementHandler(logger, annRepo)
+	annHandlers := announcement2.NewAnnouncementHandler(logger, annRepo)
 	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository)
 
 	// Ручки требующие авторизации
