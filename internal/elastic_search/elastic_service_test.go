@@ -42,31 +42,31 @@ func TestIndexAnnouncement(t *testing.T) {
 		mockFn      func(req *http.Request) (*http.Response, error)
 		expectedErr error
 	}{
-		//{
-		//	name: "successful indexing",
-		//	doc: esDoc.ElasticDoc{
-		//		ID:          "test-id",
-		//		Title:       "test-title",
-		//		Description: "test-description",
-		//		Category:    1,
-		//	},
-		//	mockFn: func(req *http.Request) (*http.Response, error) {
-		//		if req.Method == "GET" && req.URL.Path == "/_cluster/health" {
-		//			return &http.Response{
-		//				StatusCode: 200,
-		//				Header:     http.Header{"X-elastic-product": []string{"Elasticsearch"}},
-		//				Body:       io.NopCloser(strings.NewReader(`{"status":"green"}`)),
-		//			}, nil
-		//		}
+		//		{
+		//			name: "successful indexing",
+		//			doc: esDoc.ElasticDoc{
+		//				ID:          "test-id",
+		//				Title:       "test-title",
+		//				Description: "test-description",
+		//				Category:    1,
+		//			},
+		//			mockFn: func(req *http.Request) (*http.Response, error) {
+		//				if req.Method == "GET" && req.URL.Path == "/_cluster/health" {
+		//					return &http.Response{
+		//						StatusCode: 200,
+		//						Header:     http.Header{"X-elastic-product": []string{"Elasticsearch"}},
+		//						Body:       io.NopCloser(strings.NewReader(`{"status":"green"}`)),
+		//					}, nil
+		//				}
 		//
-		//		return &http.Response{
-		//			StatusCode: http.StatusOK,
-		//			Header:     http.Header{"X-elastic-product": []string{"Elasticsearch"}},
-		//			Body:       io.NopCloser(strings.NewReader(`{}`)),
-		//		}, nil
-		//	},
-		//	expectedErr: nil,
-		//},
+		//				return &http.Response{
+		//					StatusCode: http.StatusOK,
+		//					Header:     http.Header{"X-elastic-product": []string{"Elasticsearch"}},
+		//					Body:       io.NopCloser(strings.NewReader(`{}`)),
+		//				}, nil
+		//			},
+		//			expectedErr: nil,
+		//		},
 		{
 			name: "elasticsearch error",
 			doc: esDoc.ElasticDoc{
