@@ -72,7 +72,7 @@ func main() {
 	// announcement routes
 	r.HandleFunc("/announcement", annHandler.Create).Methods("POST")
 	r.HandleFunc("/announcement/{id}", annHandler.GetByID).Methods("GET")
-	r.HandleFunc("/announcements/top/{limit}", annHandler.GetTopN).Methods("GET")
+	r.HandleFunc("/announcements/top", annHandler.GetTopN).Methods("POST")
 	r.HandleFunc("/announcements/search", annHandler.Search).Methods("GET")
 	r.HandleFunc("/announcement/{id}/rating", annHandler.UpdateRating).Methods("POST")
 

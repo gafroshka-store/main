@@ -3,11 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"net/http"
-	"strconv"
-
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+	"net/http"
 
 	"gafroshka-main/internal/announcement"
 	typesAnn "gafroshka-main/internal/types/announcement"
@@ -79,17 +77,23 @@ func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("fetched announcement by id: %s", id)
 }
 
-// GetTopN handles GET /announcements/top/{limit}
+// GetTopN handles POST /announcements/top
 func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	limitStr := vars["limit"]
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		myErr.SendErrorTo(w, errors.New("invalid limit"), http.StatusBadRequest, h.Logger)
+	var input struct {
+		Limit int `json:"limit"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		myErr.SendErrorTo(w, errors.New("invalid JSON payload"), http.StatusBadRequest, h.Logger)
 		return
 	}
 
-	anns, err := h.AnnouncementRepo.GetTopN(limit)
+	if input.Limit <= 0 {
+		myErr.SendErrorTo(w, errors.New("limit must be positive number"), http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	anns, err := h.AnnouncementRepo.GetTopN(input.Limit)
 	if err != nil {
 		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
 		return
@@ -102,7 +106,7 @@ func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Logger.Infof("fetched top %d announcements", limit)
+	h.Logger.Infof("fetched top %d announcements", input.Limit)
 }
 
 // Search handles GET /announcements/search?q={query}
@@ -143,6 +147,11 @@ func (h *AnnouncementHandler) UpdateRating(w http.ResponseWriter, r *http.Reques
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		myErr.SendErrorTo(w, errors.New("invalid JSON payload"), http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	if payload.Rating < 1 || payload.Rating > 5 {
+		myErr.SendErrorTo(w, errors.New("rating must be between 1 and 5"), http.StatusBadRequest, h.Logger)
 		return
 	}
 
