@@ -107,3 +107,29 @@ CREATE TRIGGER trg_update_announcement_rating_on_delete
 AFTER DELETE ON announcement_feedback
 FOR EACH ROW
 EXECUTE FUNCTION update_announcement_rating_on_delete();
+
+CREATE OR REPLACE FUNCTION update_announcement_rating_on_feedback_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE announcement
+    SET rating = (
+            SELECT COALESCE(AVG(rating), 0)
+            FROM announcement_feedback
+            WHERE announcement_recipient_id = NEW.announcement_recipient_id
+        ),
+        rating_count = (
+            SELECT COUNT(*)
+            FROM announcement_feedback
+            WHERE announcement_recipient_id = NEW.announcement_recipient_id
+        )
+    WHERE id = NEW.announcement_recipient_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_update_announcement_rating ON announcement_feedback;
+
+CREATE TRIGGER trg_update_announcement_rating
+AFTER UPDATE OF rating ON announcement_feedback
+FOR EACH ROW
+EXECUTE PROCEDURE update_announcement_rating_on_feedback_update();

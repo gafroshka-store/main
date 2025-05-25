@@ -139,6 +139,7 @@ func main() {
 
 	authRouter.HandleFunc("/feedback", annFeedbackHandlers.Create).Methods("POST")
 	authRouter.HandleFunc("/feedback/{id}", annFeedbackHandlers.Delete).Methods("DELETE")
+	authRouter.HandleFunc("/feedback/{id}", annFeedbackHandlers.Update).Methods("PATCH")
 
 	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
 	authRouter.HandleFunc("/user/{id}/balance/topup", userHandlers.TopUpBalance).Methods("POST")

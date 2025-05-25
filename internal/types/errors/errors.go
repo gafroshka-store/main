@@ -30,6 +30,8 @@ var (
 	ErrInvalidJSONPayload = errors.New("invalid JSON payload")
 
 	ErrIndexing = errors.New("indexing error")
+
+	ErrAlreadyLeftFeedback = errors.New("user has already left feedback for this announcement")
 )
 
 type ErrorServer struct {

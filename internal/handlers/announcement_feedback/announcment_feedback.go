@@ -86,3 +86,42 @@ func (h *AnnouncementFeedbackHandler) GetByAnnouncementID(w http.ResponseWriter,
 		return
 	}
 }
+
+// Update handles PATCH /feedback/{id}
+func (h *AnnouncementFeedbackHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	if id == "" {
+		myErr.SendErrorTo(w, myErr.ErrMissingFeedbackID, http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	var req struct {
+		Comment string `json:"comment"`
+		Rating  int    `json:"rating"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		myErr.SendErrorTo(w, myErr.ErrInvalidJSONPayload, http.StatusBadRequest, h.Logger)
+		return
+	}
+	if req.Rating < 1 || req.Rating > 5 {
+		myErr.SendErrorTo(w, myErr.ErrRatingIsInvalid, http.StatusBadRequest, h.Logger)
+		return
+	}
+	if len(req.Comment) > 1000 {
+		myErr.SendErrorTo(w, myErr.ErrCommentIsTooLong, http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	updated, err := h.FeedbackRepo.Update(id, req.Comment, req.Rating)
+	if err != nil {
+		myErr.SendErrorTo(w, myErr.ErrDBInternal, http.StatusInternalServerError, h.Logger)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(updated); err != nil {
+		myErr.SendErrorTo(w, myErr.ErrDBInternal, http.StatusInternalServerError, h.Logger)
+		return
+	}
+}
