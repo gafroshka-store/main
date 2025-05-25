@@ -9,6 +9,8 @@ import (
 
 type Config struct {
 	CfgDB           ConfigDB      `yaml:"db"`
+	CfgES           ConfigES      `yaml:"es"`
+	ETLTimeout      time.Duration `yaml:"etl_search_timeout"`
 	MaxOpenConns    int           `yaml:"max_open_conns"`
 	Secret          string        `yaml:"secret"`
 	ServerPort      string        `yaml:"srv_port"`
@@ -21,6 +23,10 @@ type ConfigDB struct {
 	Port     uint   `yaml:"port"`
 	Database string `yaml:"database"`
 	Host     string `yaml:"host"`
+}
+
+type ConfigES struct {
+	Index string `yaml:"index"`
 }
 
 func NewConfig(configPath string) (*Config, error) {
