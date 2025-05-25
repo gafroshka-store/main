@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
+	"gafroshka-main/internal/elastic_search"
+	"gafroshka-main/internal/etl"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
 	handlersUser "gafroshka-main/internal/handlers/user"
 	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
@@ -12,6 +15,7 @@ import (
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
 	userFeedback "gafroshka-main/internal/user_feedback"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/go-redis/redis/v8"
 	"net/http"
 	"time"
@@ -25,6 +29,7 @@ import (
 const (
 	cfgPath   = "config/config.yaml"
 	RedisAddr = "redis:6379"
+	ESAddr    = "http://elasticsearch:9200"
 )
 
 func main() {
@@ -34,7 +39,7 @@ func main() {
 		panic(err)
 	}
 	logger := zapLogger.Sugar()
-	//	тк функция откладывается буду использовать
+	// тк функция откладывается буду использовать
 	// обертку в анонимную функцию
 	defer func() {
 		err = zapLogger.Sync()
@@ -73,6 +78,32 @@ func main() {
 		Password: "",
 		DB:       0, // стандартная БД
 	})
+
+	// init ES
+	elasticClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{
+			ESAddr,
+		},
+	})
+	if err != nil {
+		logger.Errorf("failed to create elastic client: %v", err)
+	}
+
+	_, err = elasticClient.Ping()
+	if err != nil {
+		logger.Warnf("failed to ping Elasticsearch: %v", err)
+	}
+
+	elasicService := elastic.NewService(elasticClient, logger, c.CfgES.Index)
+
+	// init and start ETL
+	extractor := etl.NewPostgresExtractor(db, logger)
+	transformer := etl.NewTransformer(logger)
+	loader := etl.NewElasticLoader(elasicService, logger)
+
+	pipeline := etl.NewPipeline(extractor, transformer, loader, logger, c.ETLTimeout)
+
+	go pipeline.Run(context.Background())
 
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
