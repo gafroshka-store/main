@@ -10,7 +10,7 @@ import (
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
 	handlersUser "gafroshka-main/internal/handlers/user"
 	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
-	handlersAnn "gafroshka-main/internal/handlers/announcement"
+	"gafroshka-main/internal/handlers"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
@@ -87,7 +87,7 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-  	annHandlers := handlersAnn.NewAnnouncementHandler(logger, annRepo)
+  	annHandlers := handlers.NewAnnouncementHandler(logger, annRepo)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
