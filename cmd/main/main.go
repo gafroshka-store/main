@@ -12,17 +12,20 @@ import (
 	"gafroshka-main/internal/etl"
 	"gafroshka-main/internal/handlers"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
+	handlersCart "gafroshka-main/internal/handlers/shopping_cart"
 	handlersUser "gafroshka-main/internal/handlers/user"
 	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
+	cart "gafroshka-main/internal/shopping_cart"
 	"gafroshka-main/internal/user"
 	userFeedback "gafroshka-main/internal/user_feedback"
 	"net/http"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/go-redis/redis/v8"
+
+	"github.com/elastic/go-elasticsearch/v8"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -72,6 +75,7 @@ func main() {
 	}
 
 	db.SetMaxOpenConns(c.MaxOpenConns)
+
 	err = db.Ping()
 	if err != nil {
 		logger.Infof("Failed to get response to ping: %v", err)
@@ -112,10 +116,12 @@ func main() {
 
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
+	announcementRepository := announcement.NewAnnouncementDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
 	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
 	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
+	shoppingCartRepository := cart.NewShoppingCartRepository(db, logger)
 
 	// init router
 	r := mux.NewRouter()
@@ -125,6 +131,7 @@ func main() {
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
 	annHandlers := handlers.NewAnnouncementHandler(logger, annRepo)
+	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
@@ -134,6 +141,7 @@ func main() {
 	authRouter.HandleFunc("/feedback/{id}", annFeedbackHandlers.Delete).Methods("DELETE")
 
 	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
+	authRouter.HandleFunc("/user/{id}/balance/topup", userHandlers.TopUpBalance).Methods("POST")
 
 	authRouter.HandleFunc("/feedback", userFeedbackHandlers.Create).Methods("POST")
 	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
@@ -142,12 +150,17 @@ func main() {
 	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
 	authRouter.HandleFunc("/announcement/{id}/rating", annHandlers.UpdateRating).Methods("POST")
 
+	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST")
+	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.DeleteFromShoppingCart).Methods("DELETE")
+	authRouter.HandleFunc("/cart/{userID}", shoppingCartHandlers.GetCart).Methods("GET")
+
 	// Ручки НЕ требующие авторизации
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
 
 	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
 	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
 	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
+	noAuthRouter.HandleFunc("/user/{id}/balance", userHandlers.GetBalance).Methods("GET")
 
 	noAuthRouter.HandleFunc("/feedback/user/{user_id}", userFeedbackHandlers.GetByUserID).Methods("GET")
 
@@ -170,7 +183,8 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	if err := srv.ListenAndServe(); err != nil {
+	err = srv.ListenAndServe()
+	if err != nil {
 		panic("can't start server: " + err.Error())
 	}
 }

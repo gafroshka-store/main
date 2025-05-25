@@ -20,10 +20,12 @@ type Announcement struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+//go:generate mockgen -source=announcement.go -destination=../mocks/mock_announcement_repo.go -package=mocks
 type AnnouncementRepo interface {
 	Create(a types.CreateAnnouncement) (*Announcement, error)
 	GetTopN(limit int) ([]Announcement, error)
 	Search(query string) ([]Announcement, error)
 	GetByID(id string) (*Announcement, error)
 	UpdateRating(id string, rate int) (*Announcement, error)
+	GetInfoForShoppingCart(ids []string) ([]types.InfoForSC, error)
 }
