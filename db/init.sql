@@ -80,3 +80,7 @@ CREATE TRIGGER trg_update_announcement_rating
 AFTER INSERT ON announcement_feedback
 FOR EACH ROW
 EXECUTE FUNCTION update_announcement_rating();
+
+ALTER TABLE announcement_feedback
+ADD CONSTRAINT uniq_announcement_writer
+  UNIQUE (announcement_recipient_id, user_writer_id);
