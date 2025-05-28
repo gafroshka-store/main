@@ -75,6 +75,59 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Функция для обновления рейтинга и количества отзывов при удалении
+CREATE OR REPLACE FUNCTION update_announcement_rating_on_delete()
+RETURNS TRIGGER AS $$
+DECLARE
+  new_rating FLOAT;
+  new_count INTEGER;
+BEGIN
+  SELECT COUNT(*), COALESCE(AVG(rating), 0)
+  INTO new_count, new_rating
+  FROM announcement_feedback
+  WHERE announcement_recipient_id = OLD.announcement_recipient_id;
+
+  UPDATE announcement
+  SET
+    rating_count = new_count,
+    rating = new_rating
+  WHERE id = OLD.announcement_recipient_id;
+
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_announcement_rating_on_delete
+AFTER DELETE ON announcement_feedback
+FOR EACH ROW
+EXECUTE FUNCTION update_announcement_rating_on_delete();
+
+CREATE OR REPLACE FUNCTION update_announcement_rating_on_feedback_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE announcement
+    SET rating = (
+            SELECT COALESCE(AVG(rating), 0)
+            FROM announcement_feedback
+            WHERE announcement_recipient_id = NEW.announcement_recipient_id
+        ),
+        rating_count = (
+            SELECT COUNT(*)
+            FROM announcement_feedback
+            WHERE announcement_recipient_id = NEW.announcement_recipient_id
+        )
+    WHERE id = NEW.announcement_recipient_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_update_announcement_rating ON announcement_feedback;
+
+CREATE TRIGGER trg_update_announcement_rating
+AFTER UPDATE OF rating ON announcement_feedback
+FOR EACH ROW
+EXECUTE PROCEDURE update_announcement_rating_on_feedback_update();
+
 -- Триггер, который вызывает эту функцию после вставки
 CREATE TRIGGER trg_update_announcement_rating
 AFTER INSERT ON announcement_feedback

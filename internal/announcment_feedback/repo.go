@@ -108,3 +108,25 @@ func (fr *FeedbackDBRepository) GetByAnnouncementID(announcementID string) ([]Fe
 
 	return feedbacks, nil
 }
+
+func (fr *FeedbackDBRepository) Update(feedbackID string, comment string, rating int) (Feedback, error) {
+	query := `
+        UPDATE announcement_feedback
+        SET comment = $1, rating = $2
+        WHERE id = $3
+        RETURNING id, announcement_recipient_id, user_writer_id, comment, rating
+    `
+	var fb Feedback
+	err := fr.DB.QueryRow(query, comment, rating, feedbackID).Scan(
+		&fb.ID,
+		&fb.AnnouncementID,
+		&fb.UserWriterID,
+		&fb.Comment,
+		&fb.Rating,
+	)
+	if err != nil {
+		fr.Logger.Warnf("Ошибка при обновлении отзыва: %v", err)
+		return Feedback{}, errors.ErrDBInternal
+	}
+	return fb, nil
+}

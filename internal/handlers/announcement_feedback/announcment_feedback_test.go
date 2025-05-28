@@ -201,3 +201,56 @@ func TestGetByAnnouncementID_DBError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }
+
+func TestUpdate_Success(t *testing.T) {
+	h, mockRepo, teardown := setupHandler(t)
+	defer teardown()
+
+	input := struct {
+		Comment string `json:"comment"`
+		Rating  int    `json:"rating"`
+	}{
+		Comment: "Updated comment",
+		Rating:  4,
+	}
+	expected := announcmentfeedback.Feedback{
+		ID:             "f1",
+		AnnouncementID: "a1",
+		UserWriterID:   "u1",
+		Comment:        "Updated comment",
+		Rating:         4,
+	}
+	mockRepo.EXPECT().Update("f1", "Updated comment", 4).Return(expected, nil)
+
+	body, err := json.Marshal(input)
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPatch, "/feedback/f1", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{"id": "f1"})
+	w := httptest.NewRecorder()
+	h.Update(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	var got announcmentfeedback.Feedback
+	err = json.NewDecoder(res.Body).Decode(&got)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, got)
+}
+
+func TestUpdate_InvalidJSON(t *testing.T) {
+	h, _, teardown := setupHandler(t)
+	defer teardown()
+
+	req := httptest.NewRequest(http.MethodPatch, "/feedback/f1", bytes.NewReader([]byte("{invalid json")))
+	req = mux.SetURLVars(req, map[string]string{"id": "f1"})
+	w := httptest.NewRecorder()
+	h.Update(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}

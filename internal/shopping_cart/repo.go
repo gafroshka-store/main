@@ -5,7 +5,6 @@ import (
 	myErr "gafroshka-main/internal/types/errors"
 
 	"database/sql"
-	"fmt"
 
 	"go.uber.org/zap"
 )
@@ -31,7 +30,7 @@ func (scr *ShoppingCartRepository) AddAnnouncement(userID string, announcementID
 	_, err := scr.DB.Exec(query, userID, announcementID)
 	if err != nil {
 		scr.Logger.Errorf("Ошибка при добавлении объявления: %v", err)
-		return fmt.Errorf("%w:%w", err, myErr.ErrDBInternal)
+		return myErr.ErrDBInternal
 	}
 
 	return nil
@@ -50,7 +49,7 @@ func (scr *ShoppingCartRepository) DeleteAnnouncement(userID string, announcemen
 		}
 
 		scr.Logger.Errorf("Ошибка при удалении из корзины: %v", err)
-		return fmt.Errorf("%w:%w", err, myErr.ErrDBInternal)
+		return myErr.ErrDBInternal
 	}
 
 	return nil
@@ -69,7 +68,7 @@ func (scr *ShoppingCartRepository) GetByUserID(userID string) ([]string, error) 
 		}
 
 		scr.Logger.Errorf("Ошибка при получении корзины клиента %v: %v", userID, err)
-		return nil, fmt.Errorf("%w:%w", err, myErr.ErrDBInternal)
+		return nil, myErr.ErrDBInternal
 	}
 	defer rows.Close()
 
@@ -77,7 +76,7 @@ func (scr *ShoppingCartRepository) GetByUserID(userID string) ([]string, error) 
 	for rows.Next() {
 		var announcementID string
 		if err := rows.Scan(&announcementID); err != nil {
-			return nil, fmt.Errorf("%w:%w", err, myErr.ErrDBInternal)
+			return nil, myErr.ErrDBInternal
 		}
 
 		announcementIDs = append(announcementIDs, announcementID)
