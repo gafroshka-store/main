@@ -1,4 +1,4 @@
-package handlers_test
+package handlers
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 
 	announcmentfeedback "gafroshka-main/internal/announcment_feedback"
-	handlers "gafroshka-main/internal/handlers/announcement_feedback"
 	"gafroshka-main/internal/mocks"
 	myErr "gafroshka-main/internal/types/errors"
 
@@ -20,15 +19,17 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func setupHandler(t *testing.T) (*handlers.AnnouncementFeedbackHandler, *mocks.MockFeedbackRepo, func()) {
+func setupHandler(t *testing.T) (*AnnouncementFeedbackHandler, *mocks.MockFeedbackRepo, func()) {
+	t.Helper()
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockFeedbackRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := handlers.NewAnnouncementFeedbackHandler(logger, mockRepo)
+	handler := NewAnnouncementFeedbackHandler(logger, mockRepo)
 	return handler, mockRepo, func() { ctrl.Finish() }
 }
 
 func TestCreate_Success(t *testing.T) {
+	t.Parallel()
 	h, mockRepo, teardown := setupHandler(t)
 	defer teardown()
 
@@ -58,6 +59,7 @@ func TestCreate_Success(t *testing.T) {
 }
 
 func TestCreate_InvalidJSON(t *testing.T) {
+	t.Parallel()
 	h, _, teardown := setupHandler(t)
 	defer teardown()
 
@@ -72,6 +74,7 @@ func TestCreate_InvalidJSON(t *testing.T) {
 }
 
 func TestDelete_Success(t *testing.T) {
+	t.Parallel()
 	h, mockRepo, teardown := setupHandler(t)
 	defer teardown()
 
@@ -89,6 +92,7 @@ func TestDelete_Success(t *testing.T) {
 }
 
 func TestDelete_MissingID(t *testing.T) {
+	t.Parallel()
 	h, _, teardown := setupHandler(t)
 	defer teardown()
 
@@ -104,6 +108,7 @@ func TestDelete_MissingID(t *testing.T) {
 }
 
 func TestDelete_NotFound(t *testing.T) {
+	t.Parallel()
 	h, mockRepo, teardown := setupHandler(t)
 	defer teardown()
 
@@ -121,6 +126,7 @@ func TestDelete_NotFound(t *testing.T) {
 }
 
 func TestDelete_DBError(t *testing.T) {
+	t.Parallel()
 	h, mockRepo, teardown := setupHandler(t)
 	defer teardown()
 
@@ -138,6 +144,7 @@ func TestDelete_DBError(t *testing.T) {
 }
 
 func TestGetByAnnouncementID_Success(t *testing.T) {
+	t.Parallel()
 	h, mockRepo, teardown := setupHandler(t)
 	defer teardown()
 
@@ -162,6 +169,7 @@ func TestGetByAnnouncementID_Success(t *testing.T) {
 }
 
 func TestGetByAnnouncementID_MissingID(t *testing.T) {
+	t.Parallel()
 	h, _, teardown := setupHandler(t)
 	defer teardown()
 
@@ -177,6 +185,7 @@ func TestGetByAnnouncementID_MissingID(t *testing.T) {
 }
 
 func TestGetByAnnouncementID_DBError(t *testing.T) {
+	t.Parallel()
 	h, mockRepo, teardown := setupHandler(t)
 	defer teardown()
 

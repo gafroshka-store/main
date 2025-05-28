@@ -17,6 +17,7 @@ import (
 )
 
 func TestShoppingCartHandler_AddToShoppingCart(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -62,7 +63,9 @@ func TestShoppingCartHandler_AddToShoppingCart(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			tc.mockBehavior()
 			url := fmt.Sprintf("/cart/%s/item/%s", tc.userID, tc.annID)
 			req := httptest.NewRequest(http.MethodPost, url, nil)
@@ -83,6 +86,7 @@ func TestShoppingCartHandler_AddToShoppingCart(t *testing.T) {
 }
 
 func TestShoppingCartHandler_DeleteFromShoppingCart(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -129,7 +133,9 @@ func TestShoppingCartHandler_DeleteFromShoppingCart(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			tc.mockBehavior()
 
 			url := fmt.Sprintf("/cart/%s/item/%s", tc.userID, tc.annID)
@@ -151,6 +157,7 @@ func TestShoppingCartHandler_DeleteFromShoppingCart(t *testing.T) {
 }
 
 func TestShoppingCartHandler_GetCart(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -200,7 +207,9 @@ func TestShoppingCartHandler_GetCart(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			tc.mockBehavior()
 
 			url := fmt.Sprintf("/cart/%s", tc.userID)

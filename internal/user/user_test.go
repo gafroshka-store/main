@@ -19,6 +19,7 @@ import (
 )
 
 func TestUserDBRepository_CreateUser(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -74,6 +75,7 @@ func TestUserDBRepository_CreateUser(t *testing.T) {
 }
 
 func TestUserDBRepository_CheckUser(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -158,6 +160,7 @@ func TestUserDBRepository_CheckUser(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockQuery()
 			user, err := repository.CheckUser(tt.email, tt.password)
@@ -176,6 +179,7 @@ func TestUserDBRepository_CheckUser(t *testing.T) {
 }
 
 func TestUserDBRepository_Info(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -257,6 +261,7 @@ func TestUserDBRepository_Info(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockQuery()
 
@@ -269,6 +274,7 @@ func TestUserDBRepository_Info(t *testing.T) {
 }
 
 func TestUserDBRepository_ChangeProfile(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -386,6 +392,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockQuery()
 
@@ -398,6 +405,7 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 }
 
 func TestUserDBRepository_GetBalanceByUserID(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -462,6 +470,7 @@ func TestUserDBRepository_GetBalanceByUserID(t *testing.T) {
 }
 
 func TestUserDBRepository_TopUpBalance(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("unexpected error when opening stub db: %s", err)

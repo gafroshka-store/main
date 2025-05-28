@@ -13,6 +13,7 @@ import (
 )
 
 func setup(t *testing.T) (*ShoppingCartRepository, sqlmock.Sqlmock, func()) {
+	t.Helper()
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("ошибка при создании mock db: %s", err)
@@ -32,6 +33,7 @@ func setup(t *testing.T) (*ShoppingCartRepository, sqlmock.Sqlmock, func()) {
 }
 
 func TestAddAnnouncement(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		mockBehavior  func(mock sqlmock.Sqlmock)
@@ -77,6 +79,7 @@ func TestAddAnnouncement(t *testing.T) {
 }
 
 func TestDeleteAnnouncement(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		mockBehavior  func(mock sqlmock.Sqlmock)
@@ -122,6 +125,7 @@ func TestDeleteAnnouncement(t *testing.T) {
 }
 
 func TestGetByUserID(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		mockBehavior   func(mock sqlmock.Sqlmock)

@@ -26,6 +26,7 @@ const (
 )
 
 func TestUserHandler_Login(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -109,7 +110,9 @@ func TestUserHandler_Login(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockBehavior()
 
 			var body io.Reader
@@ -132,6 +135,7 @@ func TestUserHandler_Login(t *testing.T) {
 }
 
 func TestUserHandler_Register(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -209,7 +213,9 @@ func TestUserHandler_Register(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockBehavior()
 
 			bodyBytes, _ := json.Marshal(tt.body) // nolint:errcheck
@@ -296,6 +302,7 @@ func TestUserHandler_Info(t *testing.T) {
 }
 
 func TestUserHandler_ChangeProfile(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -352,7 +359,9 @@ func TestUserHandler_ChangeProfile(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockBehavior()
 
 			var reqBody io.Reader
@@ -378,6 +387,7 @@ func TestUserHandler_ChangeProfile(t *testing.T) {
 }
 
 func TestUserHandler_GetBalance(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -431,7 +441,9 @@ func TestUserHandler_GetBalance(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockBehavior()
 
 			req := httptest.NewRequest(http.MethodGet, "/users/"+tt.userID+"/balance", nil)
@@ -446,6 +458,7 @@ func TestUserHandler_GetBalance(t *testing.T) {
 }
 
 func TestUserHandler_TopUpBalance(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -522,6 +535,7 @@ func TestUserHandler_TopUpBalance(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockBehavior()
 
