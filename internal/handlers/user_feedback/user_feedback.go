@@ -6,9 +6,10 @@ import (
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user_feedback"
 	userFeedback "gafroshka-main/internal/user_feedback"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 const (
@@ -29,11 +30,11 @@ func NewUserFeedbackHandler(l *zap.SugaredLogger, repo userFeedback.UserFeedback
 	}
 }
 
+// Create handles POST /user/feedback
 func (h *UserFeedbackHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var feedback userFeedback.UserFeedback
 	if err := json.NewDecoder(r.Body).Decode(&feedback); err != nil {
 		myErr.SendErrorTo(w, myErr.ErrInvalidJSONPayload, http.StatusBadRequest, h.Logger)
-
 		return
 	}
 
@@ -48,22 +49,25 @@ func (h *UserFeedbackHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	createdFeedback, err := h.UserFeedbackRepository.Create(r.Context(), &feedback)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
-
+		if errors.Is(err, myErr.ErrAlreadyLeftFeedback) {
+			myErr.SendErrorTo(w, myErr.ErrAlreadyLeftFeedback, http.StatusBadRequest, h.Logger)
+			return
+		}
+		myErr.SendErrorTo(w, myErr.ErrDBInternal, http.StatusInternalServerError, h.Logger)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(createdFeedback); err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
-
+		myErr.SendErrorTo(w, myErr.ErrDBInternal, http.StatusInternalServerError, h.Logger)
 		return
 	}
 
 	h.Logger.Infof("Created user feedback with id: %s", createdFeedback.ID)
 }
 
+// GetByUserID handles GET /user/feedback/user/{id}
 func (h *UserFeedbackHandler) GetByUserID(w http.ResponseWriter, r *http.Request) {
 	userID := mux.Vars(r)["id"]
 	if userID == "" {
@@ -89,6 +93,7 @@ func (h *UserFeedbackHandler) GetByUserID(w http.ResponseWriter, r *http.Request
 	h.Logger.Infof("Retrieved feedbacks for user id: %s", userID)
 }
 
+// Update handles PUT /user/feedback/{id}
 func (h *UserFeedbackHandler) Update(w http.ResponseWriter, r *http.Request) {
 	feedbackID := mux.Vars(r)["id"]
 	if feedbackID == "" {
@@ -130,6 +135,7 @@ func (h *UserFeedbackHandler) Update(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("Updated user feedback with id: %s", feedbackID)
 }
 
+// Delete handles DELETE /user/feedback/{id}
 func (h *UserFeedbackHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	feedbackID := mux.Vars(r)["id"]
 	if feedbackID == "" {

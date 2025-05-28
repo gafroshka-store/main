@@ -2,8 +2,9 @@ package announcmentfeedback
 
 import (
 	"database/sql"
-	"gafroshka-main/internal/types/errors"
 	"strings"
+
+	"gafroshka-main/internal/types/errors"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -40,7 +41,10 @@ func (fr *FeedbackDBRepository) Create(f Feedback) (Feedback, error) {
 	).Scan(&insertedID)
 
 	if err != nil {
-		// Проверяем ошибку Postgres о неправильном ON CONFLICT по тексту ошибки
+		// Если нет строк (ON CONFLICT DO NOTHING), Scan вернет sql.ErrNoRows
+		if err == sql.ErrNoRows {
+			return Feedback{}, errors.ErrAlreadyLeftFeedback
+		}
 		if strings.Contains(err.Error(), "ON CONFLICT specification") {
 			fr.Logger.Warnf("ON CONFLICT constraint missing in DB: %v", err)
 			return Feedback{}, errors.ErrAlreadyLeftFeedback

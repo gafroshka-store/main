@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
-	announcement2 "gafroshka-main/internal/handlers/announcement"
 
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	elastic "gafroshka-main/internal/elastic_search"
 	"gafroshka-main/internal/etl"
+	userAnnHandlers "gafroshka-main/internal/handlers/announcement"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
 	handlersCart "gafroshka-main/internal/handlers/shopping_cart"
 	handlersUser "gafroshka-main/internal/handlers/user"
@@ -130,23 +130,23 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-	annHandlers := announcement2.NewAnnouncementHandler(logger, annRepo)
+	annHandlers := userAnnHandlers.NewAnnouncementHandler(logger, annRepo)
 	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
 	authRouter.Use(middleware.Auth(sessionRepository))
 
-	authRouter.HandleFunc("/feedback", annFeedbackHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/feedback/{id}", annFeedbackHandlers.Delete).Methods("DELETE")
-	authRouter.HandleFunc("/feedback/{id}", annFeedbackHandlers.Update).Methods("PATCH")
+	authRouter.HandleFunc("/announcement/feedback", annFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/announcement/feedback/{id}", annFeedbackHandlers.Delete).Methods("DELETE")
+	authRouter.HandleFunc("/announcement/feedback/{id}", annFeedbackHandlers.Update).Methods("PATCH")
 
 	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
 	authRouter.HandleFunc("/user/{id}/balance/topup", userHandlers.TopUpBalance).Methods("POST")
 
-	authRouter.HandleFunc("/feedback", userFeedbackHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
-	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
+	authRouter.HandleFunc("/user/feedback", userFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/user/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
+	authRouter.HandleFunc("/user/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
 
 	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
 	authRouter.HandleFunc("/announcement/{id}/rating", annHandlers.UpdateRating).Methods("POST")
@@ -163,9 +163,8 @@ func main() {
 	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
 	noAuthRouter.HandleFunc("/user/{id}/balance", userHandlers.GetBalance).Methods("GET")
 
-	noAuthRouter.HandleFunc("/feedback/user/{user_id}", userFeedbackHandlers.GetByUserID).Methods("GET")
-
-	noAuthRouter.HandleFunc("/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
+	noAuthRouter.HandleFunc("/user/feedback/user/{id}", userFeedbackHandlers.GetByUserID).Methods("GET")
+	noAuthRouter.HandleFunc("/announcement/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
 
 	noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
 	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")

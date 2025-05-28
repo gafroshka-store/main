@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"go.uber.org/zap"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user_feedback"
@@ -34,13 +35,15 @@ func (userFeedbackRepository *UserFeedbackRepository) Create(
 ) (*UserFeedback, error) {
 	userFeedback.ID = uuid.New().String()
 
-	query :=
-		`
+	query := `
 		INSERT INTO user_feedback (id, user_recipient_id, user_writer_id, comment, rating)
 		VALUES ($1, $2, $3, $4, $5)
-		`
+		ON CONFLICT (user_recipient_id, user_writer_id) DO NOTHING
+		RETURNING id
+	`
 
-	_, err := userFeedbackRepository.DB.ExecContext(
+	var insertedID string
+	err := userFeedbackRepository.DB.QueryRowContext(
 		ctx,
 		query,
 		userFeedback.ID,
@@ -48,18 +51,36 @@ func (userFeedbackRepository *UserFeedbackRepository) Create(
 		userFeedback.UserWriterID,
 		userFeedback.Comment,
 		userFeedback.Rating,
-	)
+	).Scan(&insertedID)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// ON CONFLICT сработал, строка не вставлена
+			userFeedbackRepository.Logger.Info(
+				"User has already left feedback",
+				zap.String("userWriterID", userFeedback.UserWriterID),
+				zap.String("userRecipientID", userFeedback.UserRecipientID),
+			)
+			return nil, myErr.ErrAlreadyLeftFeedback
+		}
+
+		if strings.Contains(err.Error(), "ON CONFLICT specification") {
+			userFeedbackRepository.Logger.Warn(
+				"ON CONFLICT constraint missing in DB",
+				zap.Error(err),
+			)
+			return nil, myErr.ErrAlreadyLeftFeedback
+		}
+
 		userFeedbackRepository.Logger.Error(
-			"Failed save user feedback to DB",
+			"Failed to save user feedback to DB",
 			zap.Error(err),
 			zap.String("userFeedbackID", userFeedback.ID),
 		)
-
 		return nil, myErr.ErrDBInternal
 	}
 
+	userFeedback.ID = insertedID
 	userFeedbackRepository.Logger.Info(
 		fmt.Sprintf("User feedback with userFeedbackID %s created successfully", userFeedback.ID),
 	)

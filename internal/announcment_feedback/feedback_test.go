@@ -1,7 +1,6 @@
 package announcmentfeedback
 
 import (
-	"database/sql"
 	"regexp"
 	"testing"
 
@@ -64,13 +63,13 @@ func TestCreateFeedback(t *testing.T) {
 	// --- Новый тест: попытка повторного отзыва ---
 	t.Run("duplicate feedback not allowed", func(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta(`
-            INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
-            VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (announcement_recipient_id, user_writer_id) DO NOTHING
-            RETURNING id
-        `)).
+        INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (announcement_recipient_id, user_writer_id) DO NOTHING
+        RETURNING id
+    `)).
 			WithArgs(sqlmock.AnyArg(), "1", "2", "Еще отзыв", 4).
-			WillReturnError(sql.ErrNoRows)
+			WillReturnRows(sqlmock.NewRows([]string{"id"})) // пустые строки
 
 		dupFeedback := Feedback{
 			AnnouncementID: "1",
@@ -81,6 +80,7 @@ func TestCreateFeedback(t *testing.T) {
 		_, err := repo.Create(dupFeedback)
 		assert.ErrorIs(t, err, errors.ErrAlreadyLeftFeedback)
 	})
+
 }
 
 func TestDeleteFeedback(t *testing.T) {
