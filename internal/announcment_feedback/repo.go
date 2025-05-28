@@ -3,6 +3,7 @@ package announcmentfeedback
 import (
 	"database/sql"
 	"gafroshka-main/internal/types/errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -25,21 +26,30 @@ func (fr *FeedbackDBRepository) Create(f Feedback) (Feedback, error) {
 	query := `
         INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
         VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (announcement_recipient_id, user_writer_id) DO NOTHING
+        RETURNING id
     `
-	_, err := fr.DB.Exec(
+	var insertedID string
+	err := fr.DB.QueryRow(
 		query,
 		f.ID,
 		f.AnnouncementID,
 		f.UserWriterID,
 		f.Comment,
 		f.Rating,
-	)
+	).Scan(&insertedID)
+
 	if err != nil {
+		// Проверяем ошибку Postgres о неправильном ON CONFLICT по тексту ошибки
+		if strings.Contains(err.Error(), "ON CONFLICT specification") {
+			fr.Logger.Warnf("ON CONFLICT constraint missing in DB: %v", err)
+			return Feedback{}, errors.ErrAlreadyLeftFeedback
+		}
 		fr.Logger.Warnf("Ошибка при создании отзыва: %v", err)
 		return Feedback{}, errors.ErrDBInternal
 	}
 
-	// Возвращаем заполненную структуру с новым ID
+	f.ID = insertedID
 	return f, nil
 }
 

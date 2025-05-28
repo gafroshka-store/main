@@ -59,7 +59,7 @@ CREATE INDEX idx_announcement_feedback_recipient ON announcement_feedback(announ
 CREATE INDEX idx_cart_user_id ON shopping_cart(user_id);
 CREATE INDEX idx_cart_announcement_id ON shopping_cart(announcement_id);
 
--- Функция для обновления рейтинга и количества отзывов при вставке
+-- Функция для обновления рейтинга и количества отзывов
 CREATE OR REPLACE FUNCTION update_announcement_rating()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -74,12 +74,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_update_announcement_rating
-AFTER INSERT ON announcement_feedback
-FOR EACH ROW
-EXECUTE FUNCTION update_announcement_rating();
-
 
 -- Функция для обновления рейтинга и количества отзывов при удалении
 CREATE OR REPLACE FUNCTION update_announcement_rating_on_delete()
@@ -133,3 +127,13 @@ CREATE TRIGGER trg_update_announcement_rating
 AFTER UPDATE OF rating ON announcement_feedback
 FOR EACH ROW
 EXECUTE PROCEDURE update_announcement_rating_on_feedback_update();
+
+-- Триггер, который вызывает эту функцию после вставки
+CREATE TRIGGER trg_update_announcement_rating
+AFTER INSERT ON announcement_feedback
+FOR EACH ROW
+EXECUTE FUNCTION update_announcement_rating();
+
+ALTER TABLE announcement_feedback
+ADD CONSTRAINT uniq_announcement_writer
+  UNIQUE (announcement_recipient_id, user_writer_id);
