@@ -24,6 +24,7 @@ func NewAnnouncementFeedbackHandler(logger *zap.SugaredLogger, repo annfb.Feedba
 	}
 }
 
+// Create handles POST /announcement/feedback
 func (h *AnnouncementFeedbackHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var f annfb.Feedback
 	if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
@@ -49,7 +50,7 @@ func (h *AnnouncementFeedbackHandler) Create(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// Delete handles DELETE /feedback/{id}
+// Delete handles DELETE /announcement/feedback/{id}
 func (h *AnnouncementFeedbackHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if id == "" {
@@ -70,7 +71,7 @@ func (h *AnnouncementFeedbackHandler) Delete(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GetByAnnouncementID handles GET /feedback/announcement/{id}
+// GetByAnnouncementID handles GET /announcement/feedback/announcement/{id}
 func (h *AnnouncementFeedbackHandler) GetByAnnouncementID(w http.ResponseWriter, r *http.Request) {
 	announcementID := mux.Vars(r)["id"]
 	if announcementID == "" {

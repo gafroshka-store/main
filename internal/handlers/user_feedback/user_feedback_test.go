@@ -7,11 +7,12 @@ import (
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user_feedback"
 	userFeedback "gafroshka-main/internal/user_feedback"
-	"github.com/gorilla/mux"
-	"go.uber.org/zap/zaptest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gorilla/mux"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/golang/mock/gomock"
 )
@@ -80,7 +81,7 @@ func TestUserFeedbackHandler_Create(t *testing.T) {
 				body = bytes.NewBuffer(data)
 			}
 
-			req := httptest.NewRequest(http.MethodPost, "/feedback", body)
+			req := httptest.NewRequest(http.MethodPost, "/user/feedback", body)
 			w := httptest.NewRecorder()
 
 			handler.Create(w, req)
@@ -133,7 +134,7 @@ func TestUserFeedbackHandler_GetByUserID(t *testing.T) {
 			t.Parallel()
 			tc.mockBehavior()
 
-			req := httptest.NewRequest(http.MethodGet, "/feedback/"+tc.userID, nil)
+			req := httptest.NewRequest(http.MethodGet, "/user/feedback/user/"+tc.userID, nil)
 			req = mux.SetURLVars(req, map[string]string{"id": tc.userID})
 			w := httptest.NewRecorder()
 
@@ -215,7 +216,7 @@ func TestUserFeedbackHandler_Update(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			req := httptest.NewRequest(http.MethodPut, "/feedback/"+tc.feedbackID, bytes.NewReader(bodyBytes))
+			req := httptest.NewRequest(http.MethodPut, "/user/feedback/"+tc.feedbackID, bytes.NewReader(bodyBytes))
 			req = mux.SetURLVars(req, map[string]string{"id": tc.feedbackID})
 			w := httptest.NewRecorder()
 
@@ -272,7 +273,7 @@ func TestUserFeedbackHandler_Delete(t *testing.T) {
 			t.Parallel()
 			tc.mockBehavior()
 
-			req := httptest.NewRequest(http.MethodDelete, "/feedback/"+tc.feedbackID, nil)
+			req := httptest.NewRequest(http.MethodDelete, "/user/feedback/"+tc.feedbackID, nil)
 			req = mux.SetURLVars(req, map[string]string{"id": tc.feedbackID})
 			w := httptest.NewRecorder()
 

@@ -137,3 +137,83 @@ EXECUTE FUNCTION update_announcement_rating();
 ALTER TABLE announcement_feedback
 ADD CONSTRAINT uniq_announcement_writer
   UNIQUE (announcement_recipient_id, user_writer_id);
+
+-- Функция для обновления рейтинга и количества отзывов пользователя при вставке
+CREATE OR REPLACE FUNCTION update_user_rating_on_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE users
+  SET 
+    rating_count = rating_count + 1,
+    rating = (
+      (rating * rating_count + NEW.rating) / (rating_count + 1)
+    )
+  WHERE id = NEW.user_recipient_id;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_user_rating_on_insert
+AFTER INSERT ON user_feedback
+FOR EACH ROW
+EXECUTE FUNCTION update_user_rating_on_insert();
+
+-- Функция для обновления рейтинга и количества отзывов пользователя при удалении
+CREATE OR REPLACE FUNCTION update_user_rating_on_delete()
+RETURNS TRIGGER AS $$
+DECLARE
+  new_rating FLOAT;
+  new_count INTEGER;
+BEGIN
+  SELECT COUNT(*), COALESCE(AVG(rating), 0)
+  INTO new_count, new_rating
+  FROM user_feedback
+  WHERE user_recipient_id = OLD.user_recipient_id;
+
+  UPDATE users
+  SET
+    rating_count = new_count,
+    rating = new_rating
+  WHERE id = OLD.user_recipient_id;
+
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_user_rating_on_delete
+AFTER DELETE ON user_feedback
+FOR EACH ROW
+EXECUTE FUNCTION update_user_rating_on_delete();
+
+-- Функция для обновления рейтинга и количества отзывов пользователя при обновлении рейтинга
+CREATE OR REPLACE FUNCTION update_user_rating_on_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE users
+    SET rating = (
+            SELECT COALESCE(AVG(rating), 0)
+            FROM user_feedback
+            WHERE user_recipient_id = NEW.user_recipient_id
+        ),
+        rating_count = (
+            SELECT COUNT(*)
+            FROM user_feedback
+            WHERE user_recipient_id = NEW.user_recipient_id
+        )
+    WHERE id = NEW.user_recipient_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_user_rating_on_update
+AFTER UPDATE OF rating ON user_feedback
+FOR EACH ROW
+EXECUTE PROCEDURE update_user_rating_on_update();
+
+ALTER TABLE user_feedback
+ADD CONSTRAINT uniq_user_feedback_writer
+  UNIQUE (user_recipient_id, user_writer_id);
+
+CREATE UNIQUE INDEX idx_user_feedback_unique_pair
+ON user_feedback (user_recipient_id, user_writer_id);

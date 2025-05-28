@@ -44,7 +44,7 @@ func TestCreate_Success(t *testing.T) {
 
 	mockRepo.EXPECT().Create(input).Return(input, nil)
 
-	req := httptest.NewRequest(http.MethodPost, "/feedback", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/announcement/feedback", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Create(w, req)
 
@@ -80,7 +80,7 @@ func TestDelete_Success(t *testing.T) {
 
 	mockRepo.EXPECT().Delete("f1").Return(nil)
 
-	req := httptest.NewRequest(http.MethodDelete, "/feedback/f1", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/announcement/feedback/f1", nil)
 	req = mux.SetURLVars(req, map[string]string{"id": "f1"})
 	w := httptest.NewRecorder()
 	h.Delete(w, req)
@@ -96,7 +96,7 @@ func TestDelete_MissingID(t *testing.T) {
 	h, _, teardown := setupHandler(t)
 	defer teardown()
 
-	req := httptest.NewRequest(http.MethodDelete, "/feedback/", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/announcement/feedback/", nil)
 	req = mux.SetURLVars(req, map[string]string{"id": ""})
 	w := httptest.NewRecorder()
 	h.Delete(w, req)
@@ -114,7 +114,7 @@ func TestDelete_NotFound(t *testing.T) {
 
 	mockRepo.EXPECT().Delete("f2").Return(myErr.ErrNotFoundFeedback)
 
-	req := httptest.NewRequest(http.MethodDelete, "/feedback/f2", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/announcement/feedback/f2", nil)
 	req = mux.SetURLVars(req, map[string]string{"id": "f2"})
 	w := httptest.NewRecorder()
 	h.Delete(w, req)
@@ -132,7 +132,7 @@ func TestDelete_DBError(t *testing.T) {
 
 	mockRepo.EXPECT().Delete("f3").Return(errors.New("db error"))
 
-	req := httptest.NewRequest(http.MethodDelete, "/feedback/f3", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/announcement/feedback/f3", nil)
 	req = mux.SetURLVars(req, map[string]string{"id": "f3"})
 	w := httptest.NewRecorder()
 	h.Delete(w, req)
@@ -153,7 +153,7 @@ func TestGetByAnnouncementID_Success(t *testing.T) {
 	}
 	mockRepo.EXPECT().GetByAnnouncementID("a1").Return(expected, nil)
 
-	req := httptest.NewRequest(http.MethodGet, "/feedback/announcement/a1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/announcement/feedback/announcement/a1", nil)
 	req = mux.SetURLVars(req, map[string]string{"id": "a1"})
 	w := httptest.NewRecorder()
 	h.GetByAnnouncementID(w, req)
@@ -173,7 +173,7 @@ func TestGetByAnnouncementID_MissingID(t *testing.T) {
 	h, _, teardown := setupHandler(t)
 	defer teardown()
 
-	req := httptest.NewRequest(http.MethodGet, "/feedback/announcement/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/announcement/feedback/announcement/", nil)
 	req = mux.SetURLVars(req, map[string]string{"id": ""})
 	w := httptest.NewRecorder()
 	h.GetByAnnouncementID(w, req)
@@ -191,7 +191,7 @@ func TestGetByAnnouncementID_DBError(t *testing.T) {
 
 	mockRepo.EXPECT().GetByAnnouncementID("a2").Return(nil, errors.New("db error"))
 
-	req := httptest.NewRequest(http.MethodGet, "/feedback/announcement/a2", nil)
+	req := httptest.NewRequest(http.MethodGet, "/announcement/feedback/announcement/a2", nil)
 	req = mux.SetURLVars(req, map[string]string{"id": "a2"})
 	w := httptest.NewRecorder()
 	h.GetByAnnouncementID(w, req)

@@ -8,6 +8,7 @@ import (
 
 	customErrors "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user_feedback"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
@@ -49,11 +50,29 @@ func TestUserFeedbackRepository_Create(t *testing.T) {
 				},
 			},
 			mockFunc: func() {
-				mock.ExpectExec("INSERT INTO user_feedback").
+				mock.ExpectQuery("INSERT INTO user_feedback").
 					WithArgs(sqlmock.AnyArg(), "recipient-uuid", "writer-uuid", "Great job!", 5).
-					WillReturnResult(sqlmock.NewResult(1, 1))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("generated-id"))
 			},
 			wantErr: nil,
+		},
+		{
+			name: "already left feedback",
+			args: args{
+				feedback: &UserFeedback{
+					UserRecipientID: "recipient-uuid",
+					UserWriterID:    "writer-uuid",
+					Comment:         "Already did!",
+					Rating:          4,
+				},
+			},
+			mockFunc: func() {
+				// Симулируем отсутствие возвращаемой строки -> Scan выдаст sql.ErrNoRows
+				mock.ExpectQuery("INSERT INTO user_feedback").
+					WithArgs(sqlmock.AnyArg(), "recipient-uuid", "writer-uuid", "Already did!", 4).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
+			},
+			wantErr: customErrors.ErrAlreadyLeftFeedback,
 		},
 		{
 			name: "db error",
@@ -66,7 +85,7 @@ func TestUserFeedbackRepository_Create(t *testing.T) {
 				},
 			},
 			mockFunc: func() {
-				mock.ExpectExec("INSERT INTO user_feedback").
+				mock.ExpectQuery("INSERT INTO user_feedback").
 					WillReturnError(errors.New("db error"))
 			},
 			wantErr: customErrors.ErrDBInternal,
@@ -77,7 +96,6 @@ func TestUserFeedbackRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockFunc()
 			_, err := repo.Create(context.Background(), tt.args.feedback)
-
 			assert.Equal(t, tt.wantErr, err)
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
