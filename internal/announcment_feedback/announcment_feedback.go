@@ -12,4 +12,5 @@ type FeedbackRepo interface {
 	Create(feedback Feedback) (Feedback, error)
 	Delete(feedbackID string) error
 	GetByAnnouncementID(announcementID string) ([]Feedback, error)
+	Update(feedbackID string, comment string, rating int) (Feedback, error)
 }
