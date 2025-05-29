@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
+	"log"
 
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
@@ -103,12 +104,16 @@ func main() {
 		logger.Warnf("failed to ping Elasticsearch: %v", err)
 	}
 
-	elasicService := elastic.NewService(elasticClient, logger, c.CfgES.Index)
+	elasticService := elastic.NewService(elasticClient, logger, c.CfgES.Index)
+
+	if err := elasticService.EnsureIndex(context.Background()); err != nil {
+		log.Fatalf("failed to ensure index: %v", err)
+	}
 
 	// init and start ETL
 	extractor := etl.NewPostgresExtractor(db, logger)
 	transformer := etl.NewTransformer(logger)
-	loader := etl.NewElasticLoader(elasicService, logger)
+	loader := etl.NewElasticLoader(elasticService, logger, db)
 
 	pipeline := etl.NewPipeline(extractor, transformer, loader, logger, c.ETLTimeout)
 
@@ -116,10 +121,9 @@ func main() {
 
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
-	announcementRepository := announcement.NewAnnouncementDBRepository(db, logger)
+	announcementRepository := announcement.NewAnnouncementDBRepository(db, logger, elasticService)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
 	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
-	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 	shoppingCartRepository := cart.NewShoppingCartRepository(db, logger)
 
@@ -130,7 +134,7 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-	annHandlers := userAnnHandlers.NewAnnouncementHandler(logger, annRepo)
+	annHandlers := userAnnHandlers.NewAnnouncementHandler(logger, announcementRepository)
 	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository)
 
 	// Ручки требующие авторизации

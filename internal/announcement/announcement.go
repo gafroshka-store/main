@@ -18,6 +18,7 @@ type Announcement struct {
 	Rating       float64   `json:"rating"`
 	RatingCount  int       `json:"rating_count"`
 	CreatedAt    time.Time `json:"created_at"`
+	Searching    bool      `json:"searching"`
 }
 
 //go:generate mockgen -source=announcement.go -destination=../mocks/mock_announcement_repo.go -package=mocks
