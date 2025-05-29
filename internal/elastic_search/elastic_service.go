@@ -219,7 +219,7 @@ func (s *ElasticService) EnsureIndex(ctx context.Context) error {
 	}
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(settings); err != nil {
+	if err = json.NewEncoder(&buf).Encode(settings); err != nil {
 		s.Logger.Errorw("Failed to encode index settings", zap.Error(err))
 		return err
 	}
