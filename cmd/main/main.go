@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
-	"log"
-
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	elastic "gafroshka-main/internal/elastic_search"
@@ -106,8 +104,8 @@ func main() {
 
 	elasticService := elastic.NewService(elasticClient, logger, c.CfgES.Index)
 
-	if err := elasticService.EnsureIndex(context.Background()); err != nil {
-		log.Fatalf("failed to ensure index: %v", err)
+	if err = elasticService.EnsureIndex(context.Background()); err != nil {
+		logger.Errorf("failed to ensure index: %v", err)
 	}
 
 	// init and start ETL

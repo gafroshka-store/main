@@ -7,21 +7,6 @@
     <list default="true" id="9b9fd66a-82b4-44c0-baef-e1c3bc6225dc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/main/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/compose.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/init.sql" beforeDir="false" afterPath="$PROJECT_DIR$/db/init.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/announcement/announcement.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/announcement.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/announcement/announcement_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/announcement_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/announcement/repo.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/announcement/repo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/elastic_search/elastic_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/elastic_search/elastic_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/elastic_search/elastic_service_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/elastic_search/elastic_service_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/etl/etl_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/etl/etl_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/etl/extractor.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/etl/extractor.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/etl/loader.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/etl/loader.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/etl/pipeline.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/etl/pipeline.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/etl/transformer.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/etl/transformer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/types/elastic/elastic.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/elastic/elastic.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/types/errors/errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/types/errors/errors.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,10 +29,10 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>

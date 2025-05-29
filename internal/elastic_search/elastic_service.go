@@ -154,12 +154,12 @@ func (s *ElasticService) SearchByName(ctx context.Context, query string) ([]esDo
 		} `json:"hits"`
 	}
 
-	if err := json.NewDecoder(res.Body).Decode(&esResp); err != nil {
+	if err = json.NewDecoder(res.Body).Decode(&esResp); err != nil {
 		s.Logger.Errorw("Failed to decode search response", zap.Error(err))
 		return nil, err
 	}
 
-	var results []esDoc.ElasticDoc
+	results := make([]esDoc.ElasticDoc, 0, len(esResp.Hits.Hits))
 	for _, hit := range esResp.Hits.Hits {
 		results = append(results, hit.Source)
 	}
