@@ -1,0 +1,68 @@
+package kafka
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
+)
+
+type Consumer struct {
+	Reader ReaderInterface // Используем интерфейс
+	Logger *zap.SugaredLogger
+}
+
+func NewConsumer(brokers, topic, groupID string, logger *zap.SugaredLogger) *Consumer {
+	return &Consumer{
+		Reader: &kafkaReaderWrapper{ // Обёртка над реальным Reader
+			Reader: kafka.NewReader(kafka.ReaderConfig{
+				Brokers:  []string{brokers},
+				Topic:    topic,
+				GroupID:  groupID,
+				MinBytes: 10e3, // 10KB
+				MaxBytes: 10e6, // 10MB
+			}),
+		},
+		Logger: logger,
+	}
+}
+
+type kafkaReaderWrapper struct {
+	Reader *kafka.Reader
+}
+
+func (w *kafkaReaderWrapper) ReadMessage(ctx context.Context) (kafka.Message, error) {
+	return w.Reader.ReadMessage(ctx)
+}
+
+func (w *kafkaReaderWrapper) Close() error {
+	return w.Reader.Close()
+}
+
+func (c *Consumer) Consume(ctx context.Context, handler func(context.Context, Event) error) {
+	for {
+		msg, err := c.Reader.ReadMessage(ctx)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
+			c.Logger.Errorf("Failed to read message: %v", err)
+			continue
+		}
+
+		var event Event
+		if err := json.Unmarshal(msg.Value, &event); err != nil {
+			c.Logger.Errorf("Failed to unmarshal event: %v", err)
+			continue
+		}
+
+		if err := handler(ctx, event); err != nil {
+			c.Logger.Errorf("Failed to process event: %v", err)
+		}
+	}
+}
+
+func (c *Consumer) Close() error {
+	return c.Reader.Close()
+}

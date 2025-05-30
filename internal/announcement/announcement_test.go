@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"regexp"
 	"testing"
 	"time"
@@ -137,28 +138,30 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 	tests := []struct {
 		name        string
 		limit       int
+		categories  []int
 		mock        func()
 		expected    []Announcement
 		expectError error
 	}{
 		{
-			name:  "get top 3",
-			limit: 3,
+			name:       "get top 3 without categories",
+			limit:      3,
+			categories: nil,
 			mock: func() {
 				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT id, 
-					name, 
-					description, 
-					user_seller_id, 
-					price, 
-					
-					category, 
-					discount, 
-					is_active, rating, rating_count, created_at 
+					SELECT id, name, 
+					       description,
+					       user_seller_id, 
+					       price, 
+					       category, 
+					       discount, 
+					       is_active, 
+					       rating, 
+					       rating_count, 
+					       created_at 
 					FROM announcement 
 					WHERE is_active = TRUE 
-					ORDER BY rating DESC 
-					LIMIT $1
+					 ORDER BY rating DESC LIMIT $1
 				`)).
 					WithArgs(3).
 					WillReturnRows(sqlmock.NewRows([]string{
@@ -207,15 +210,123 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 			},
 			expectError: nil,
 		},
+		{
+			name:       "get top 2 with categories",
+			limit:      2,
+			categories: []int{1, 3},
+			mock: func() {
+				mock.ExpectQuery(regexp.QuoteMeta(`
+					SELECT id, name, 
+					       description,
+					       user_seller_id, 
+					       price, 
+					       category, 
+					       discount, 
+					       is_active, 
+					       rating, 
+					       rating_count, 
+					       created_at 
+					FROM announcement 
+					WHERE is_active = TRUE 
+					 AND category = ANY($1) ORDER BY rating DESC LIMIT $2
+				`)).
+					WithArgs(pq.Array([]int{1, 3}), 2).
+					WillReturnRows(sqlmock.NewRows([]string{
+						"id", "name", "description", "user_seller_id",
+						"price", "category", "discount", "is_active",
+						"rating", "rating_count", "created_at",
+					}).
+						AddRow(
+							"3", "Item 3", "Desc 3", "789",
+							150, 1, 10, true,
+							4.8, 3, now,
+						))
+			},
+			expected: []Announcement{
+				{
+					ID:           "3",
+					Name:         "Item 3",
+					Description:  "Desc 3",
+					UserSellerID: "789",
+					Price:        150,
+					Category:     1,
+					Discount:     10,
+					IsActive:     true,
+					Rating:       4.8,
+					RatingCount:  3,
+					CreatedAt:    now,
+				},
+			},
+			expectError: nil,
+		},
+		{
+			name:       "database error",
+			limit:      5,
+			categories: nil,
+			mock: func() {
+				mock.ExpectQuery(regexp.QuoteMeta(`
+					SELECT id, name, 
+					       description,
+					       user_seller_id, 
+					       price, 
+					       category, 
+					       discount, 
+					       is_active, 
+					       rating, 
+					       rating_count, 
+					       created_at 
+					FROM announcement 
+					WHERE is_active = TRUE 
+					 ORDER BY rating DESC LIMIT $1
+				`)).
+					WithArgs(5).
+					WillReturnError(errors.New("database error"))
+			},
+			expected:    nil,
+			expectError: customErrors.ErrDBInternal,
+		},
+		{
+			name:       "scan error",
+			limit:      1,
+			categories: nil,
+			mock: func() {
+				mock.ExpectQuery(regexp.QuoteMeta(`
+					SELECT id, name, 
+					       description,
+					       user_seller_id, 
+					       price, 
+					       category, 
+					       discount, 
+					       is_active, 
+					       rating, 
+					       rating_count, 
+					       created_at 
+					FROM announcement 
+					WHERE is_active = TRUE 
+					 ORDER BY rating DESC LIMIT $1
+				`)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{
+						"id", "name", "price", // Неполный набор колонок
+					}).AddRow("4", "Item 4", 300))
+			},
+			expected:    nil,
+			expectError: customErrors.ErrDBInternal,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mock()
 
-			result, err := repo.GetTopN(tt.limit)
+			result, err := repo.GetTopN(tt.limit, tt.categories)
+			if tt.expectError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expected, result)
-			assert.Equal(t, tt.expectError, err)
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}

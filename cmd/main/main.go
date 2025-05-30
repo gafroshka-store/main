@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
+	handlersAnnouncement "gafroshka-main/internal/handlers/announcement"
 
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	elastic "gafroshka-main/internal/elastic_search"
 	"gafroshka-main/internal/etl"
-	"gafroshka-main/internal/handlers"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
 	handlersUser "gafroshka-main/internal/handlers/user"
 	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
@@ -114,7 +114,7 @@ func main() {
 	userRepository := user.NewUserDBRepository(db, logger)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
 	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
-	annRepo := announcement.NewAnnouncementDBRepository(db, logger)
+	announcementRepository := announcement.NewAnnouncementDBRepository(db, logger)
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 
 	// init router
@@ -124,7 +124,7 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-	annHandlers := handlers.NewAnnouncementHandler(logger, annRepo)
+	announcementHandlers := handlersAnnouncement.NewAnnouncementHandler(logger, announcementRepository)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
@@ -139,8 +139,8 @@ func main() {
 	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
 	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
 
-	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/announcement/{id}/rating", annHandlers.UpdateRating).Methods("POST")
+	authRouter.HandleFunc("/announcement", announcementHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/announcement/{id}/rating", announcementHandlers.UpdateRating).Methods("POST")
 
 	// Ручки НЕ требующие авторизации
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
@@ -153,9 +153,9 @@ func main() {
 
 	noAuthRouter.HandleFunc("/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
 
-	noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
-	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")
-	noAuthRouter.HandleFunc("/announcements/search", annHandlers.Search).Methods("GET")
+	noAuthRouter.HandleFunc("/announcement/{id}", announcementHandlers.GetByID).Methods("GET")
+	noAuthRouter.HandleFunc("/announcements/top", announcementHandlers.GetTopN).Methods("POST")
+	noAuthRouter.HandleFunc("/announcements/search", announcementHandlers.Search).Methods("GET")
 
 	logger.Infow("starting server",
 		"type", "START",

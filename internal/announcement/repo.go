@@ -2,6 +2,8 @@ package announcement
 
 import (
 	"database/sql"
+	"github.com/lib/pq"
+	"strconv"
 	"strings"
 
 	types "gafroshka-main/internal/types/announcement"
@@ -67,16 +69,36 @@ func (ar *AnnouncementDBRepository) Create(a types.CreateAnnouncement) (*Announc
 	return &newAnn, nil
 }
 
-func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]Announcement, error) {
+func (ar *AnnouncementDBRepository) GetTopN(limit int, categories []int) ([]Announcement, error) {
 	query := `
-	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
+	SELECT id, name, 
+	       description,
+	       user_seller_id, 
+	       price, 
+	       category, 
+	       discount, 
+	       is_active, 
+	       rating, 
+	       rating_count, 
+	       created_at 
 	FROM announcement 
 	WHERE is_active = TRUE 
-	ORDER BY rating DESC 
-	LIMIT $1
 	`
 
-	rows, err := ar.DB.Query(query, limit)
+	args := []interface{}{}
+	paramCount := 1
+
+	// Filter categories
+	if len(categories) > 0 {
+		query += " AND category = ANY($" + strconv.Itoa(paramCount) + ")"
+		args = append(args, pq.Array(categories))
+		paramCount++
+	}
+
+	query += " ORDER BY rating DESC LIMIT $" + strconv.Itoa(paramCount)
+	args = append(args, limit)
+
+	rows, err := ar.DB.Query(query, args...)
 	if err != nil {
 		ar.Logger.Errorf("Error getting top %d announcements: %v", limit, err)
 		return nil, errors.ErrDBInternal
@@ -111,7 +133,17 @@ func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]Announcement, error) {
 func (ar *AnnouncementDBRepository) Search(query string) ([]Announcement, error) {
 	query = strings.ToLower(query)
 	sqlQuery := `
-	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at, 
+	SELECT id, 
+	       name, 
+	       description, 
+	       user_seller_id, 
+	       price, 
+	       category, 
+	       discount, 
+	       is_active, 
+	       rating, 
+	       rating_count, 
+	       created_at, 
 		(LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
 	FROM announcement 
 	WHERE is_active = TRUE
@@ -157,7 +189,17 @@ func (ar *AnnouncementDBRepository) GetByID(id string) (*Announcement, error) {
 	var a Announcement
 
 	query := `
-	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
+	SELECT id, 
+	       name, 
+	       description, 
+	       user_seller_id, 
+	       price, 
+	       category, 
+	       discount, 
+	       is_active, 
+	       rating, 
+	       rating_count, 
+	       created_at 
 	FROM announcement 
 	WHERE id = $1
 	`
