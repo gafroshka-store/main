@@ -154,6 +154,7 @@ func main() {
 	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST")
 	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.DeleteFromShoppingCart).Methods("DELETE")
 	authRouter.HandleFunc("/cart/{userID}", shoppingCartHandlers.GetCart).Methods("GET")
+	authRouter.HandleFunc("/cart/{userID}/purchase", shoppingCartHandlers.PurchaseFromCart).Methods("POST")
 
 	// Ручки НЕ требующие авторизации
 	noAuthRouter := r.PathPrefix("/api").Subrouter()

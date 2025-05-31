@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"gafroshka-main/internal/user"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -20,11 +21,21 @@ type ShoppingCartHandler struct {
 	Logger           *zap.SugaredLogger
 	CartRepo         shopping_cart.ShoppingCartRepo
 	AnnouncementRepo announcement.AnnouncementRepo
+	UserRepo         user.UserRepo
 }
 
 // NewShoppingCartHandler конструктор
-func NewShoppingCartHandler(log *zap.SugaredLogger, cr shopping_cart.ShoppingCartRepo, ar announcement.AnnouncementRepo) *ShoppingCartHandler {
-	return &ShoppingCartHandler{Logger: log, CartRepo: cr, AnnouncementRepo: ar}
+func NewShoppingCartHandler(
+	log *zap.SugaredLogger,
+	cr shopping_cart.ShoppingCartRepo,
+	ar announcement.AnnouncementRepo,
+	ur user.UserRepo,
+) *ShoppingCartHandler {
+	return &ShoppingCartHandler{
+		Logger: log, CartRepo: cr,
+		AnnouncementRepo: ar,
+		UserRepo:         ur,
+	}
 }
 
 // AddToShoppingCart - POST /cart/{userID}/item/{annID}
@@ -122,4 +133,101 @@ func (h *ShoppingCartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 		h.Logger.Warnw("error writing response", "err", err)
 		return
 	}
+}
+
+// PurchaseFromCart - POST /cart/{userID}/purchase
+// Принимает в теле запроса массив в джейсоне айдишников товаров:
+// [
+//
+//	"id1",
+//	"id2"
+//
+// ]
+// Ожидаю, что фронт, после успешной оплаты сделает вывод, что вы успешно купили эти товары
+func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userID := vars["userID"]
+
+	if _, err := uuid.Parse(userID); err != nil {
+		myErr.SendErrorTo(w, myErr.ErrBadID, http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	// Декодируем список ID объявлений из тела запроса
+	var requestedIDs []string
+	if err := json.NewDecoder(r.Body).Decode(&requestedIDs); err != nil {
+		myErr.SendErrorTo(w, err, http.StatusBadRequest, h.Logger)
+		return
+	}
+	if len(requestedIDs) == 0 {
+		myErr.SendErrorTo(w, errors.New("empty announcement list"), http.StatusBadRequest, h.Logger)
+		return
+	}
+
+	// Получаем текущую корзину пользователя
+	cartIDs, err := h.CartRepo.GetByUserID(userID)
+	if err != nil {
+		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		return
+	}
+
+	// Проверяем, что все переданные товары действительно есть в корзине
+	validItems := map[string]bool{}
+	for _, id := range cartIDs {
+		validItems[id] = true
+	}
+	for _, reqID := range requestedIDs {
+		if !validItems[reqID] {
+			myErr.SendErrorTo(w, errors.New("one or more items not in cart"), http.StatusBadRequest, h.Logger)
+			return
+		}
+	}
+
+	// Получаем информацию о товарах для расчета суммы
+	infos, err := h.AnnouncementRepo.GetInfoForShoppingCart(requestedIDs)
+	if err != nil {
+		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		return
+	}
+
+	var total int64 = 0
+	for _, item := range infos {
+		total += item.Price
+	}
+
+	// Получаем баланс пользователя
+	balance, err := h.UserRepo.GetBalanceByUserID(userID)
+	if err != nil {
+		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		return
+	}
+
+	if balance < total {
+		myErr.SendErrorTo(w, errors.New("insufficient funds"), http.StatusPaymentRequired, h.Logger)
+		return
+	}
+
+	// Списываем деньги у пользователя
+	_, err = h.UserRepo.TopUpBalance(userID, -total)
+	if err != nil {
+		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		return
+	}
+
+	// Удаляем купленные товары из корзины
+	for _, id := range requestedIDs {
+		err = h.CartRepo.DeleteAnnouncement(userID, id)
+		if err != nil {
+			h.Logger.Warnw("failed to delete item from cart after purchase", "userID", userID, "annID", id, "err", err)
+			// продолжаем, но логируем
+		}
+	}
+
+	// Отправляем подтверждение
+	h.Logger.Infof("user %s purchased items %v for total %d", userID, requestedIDs, total)
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "success",
+		"total":  total,
+	})
 }
