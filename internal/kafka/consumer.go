@@ -4,19 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/segmentio/kafka-go"
+
+	kgo "github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
 
+// Consumer реализует EventConsumer.
 type Consumer struct {
-	Reader ReaderInterface // Используем интерфейс
+	Reader ReaderInterface
 	Logger *zap.SugaredLogger
 }
 
-func NewConsumer(brokers, topic, groupID string, logger *zap.SugaredLogger) *Consumer {
+func NewConsumer(brokers, topic, groupID string, logger *zap.SugaredLogger) EventConsumer {
 	return &Consumer{
-		Reader: &kafkaReaderWrapper{ // Обёртка над реальным Reader
-			Reader: kafka.NewReader(kafka.ReaderConfig{
+		Reader: &kafkaReaderWrapper{
+			Reader: kgo.NewReader(kgo.ReaderConfig{
 				Brokers:  []string{brokers},
 				Topic:    topic,
 				GroupID:  groupID,
@@ -29,10 +31,10 @@ func NewConsumer(brokers, topic, groupID string, logger *zap.SugaredLogger) *Con
 }
 
 type kafkaReaderWrapper struct {
-	Reader *kafka.Reader
+	Reader *kgo.Reader
 }
 
-func (w *kafkaReaderWrapper) ReadMessage(ctx context.Context) (kafka.Message, error) {
+func (w *kafkaReaderWrapper) ReadMessage(ctx context.Context) (kgo.Message, error) {
 	return w.Reader.ReadMessage(ctx)
 }
 

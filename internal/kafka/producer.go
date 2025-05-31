@@ -9,14 +9,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// Producer реализует интерфейс EventProducer.
 type Producer struct {
-	Writer WriterInterface // Используем интерфейс
+	Writer WriterInterface
 	Logger *zap.SugaredLogger
 }
 
-func NewProducer(brokers []string, topic string, logger *zap.SugaredLogger) *Producer {
+func NewProducer(brokers []string, topic string, logger *zap.SugaredLogger) EventProducer {
 	return &Producer{
-		Writer: &kafkaWriterWrapper{ // Обёртка над реальным Writer
+		Writer: &kafkaWriterWrapper{
 			Writer: &kafka.Writer{
 				Addr:     kafka.TCP(brokers...),
 				Topic:    topic,
@@ -27,7 +28,7 @@ func NewProducer(brokers []string, topic string, logger *zap.SugaredLogger) *Pro
 	}
 }
 
-// Обёртка для реализации интерфейса
+// Обертка для реализации WriterInterface.
 type kafkaWriterWrapper struct {
 	Writer *kafka.Writer
 }

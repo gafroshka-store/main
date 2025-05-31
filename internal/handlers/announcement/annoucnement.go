@@ -16,6 +16,7 @@ import (
 	myErr "gafroshka-main/internal/types/errors"
 )
 
+// AnnouncementHandler работает с AnnouncementRepo и EventProducer интерфейсами.
 type AnnouncementHandler struct {
 	Logger           *zap.SugaredLogger
 	AnnouncementRepo announcement.AnnouncementRepo
@@ -25,7 +26,7 @@ type AnnouncementHandler struct {
 func NewAnnouncementHandler(
 	l *zap.SugaredLogger,
 	ar announcement.AnnouncementRepo,
-	kp *kafka.Producer,
+	kp kafka.EventProducer,
 ) *AnnouncementHandler {
 	return &AnnouncementHandler{
 		Logger:           l,
@@ -72,7 +73,7 @@ func (h *AnnouncementHandler) Create(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("announcement created: %s", ann.ID)
 }
 
-// GetByID handles GET /announcement/{id}
+// остальные методы без изменений
 func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -101,7 +102,6 @@ func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("fetched announcement by id: %s", id)
 }
 
-// GetTopN handles POST /announcements/top
 func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Limit int `json:"limit"`
@@ -150,7 +150,6 @@ func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("fetched top %d announcements for categories %v", input.Limit, categories)
 }
 
-// Search handles GET /announcements/search?q={query}
 func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
@@ -192,7 +191,6 @@ func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("searched announcements with query: %s", q)
 }
 
-// UpdateRating handles POST /announcement/{id}/rating
 func (h *AnnouncementHandler) UpdateRating(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]

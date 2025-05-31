@@ -8,12 +8,13 @@ import (
 	"strconv"
 )
 
+// Handler работает с интерфейсом AnalyticsService.
 type Handler struct {
-	service *Service
+	service AnalyticsService
 	logger  *zap.SugaredLogger
 }
 
-func NewHandler(service *Service, logger *zap.SugaredLogger) *Handler {
+func NewHandler(service AnalyticsService, logger *zap.SugaredLogger) *Handler {
 	return &Handler{
 		service: service,
 		logger:  logger,

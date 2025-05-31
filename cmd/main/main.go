@@ -5,15 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
-	handlersAnnouncement "gafroshka-main/internal/handlers/announcement"
-
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	elastic "gafroshka-main/internal/elastic_search"
 	"gafroshka-main/internal/etl"
+	handlersAnnouncement "gafroshka-main/internal/handlers/announcement"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
 	handlersUser "gafroshka-main/internal/handlers/user"
 	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
+	"gafroshka-main/internal/kafka"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	"gafroshka-main/internal/user"
@@ -31,9 +31,11 @@ import (
 )
 
 const (
-	cfgPath   = "config/config.yaml"
-	RedisAddr = "redis:6379"
-	ESAddr    = "http://elasticsearch:9200"
+	cfgPath      = "config/config.yaml"
+	RedisAddr    = "redis:6379"
+	ESAddr       = "http://elasticsearch:9200"
+	KafkaBrokers = "kafka:9092"
+	KafkaTopic   = "user-events"
 )
 
 func main() {
@@ -45,8 +47,6 @@ func main() {
 
 	logger := zapLogger.Sugar()
 
-	// тк функция откладывается буду использовать
-	// обертку в анонимную функцию
 	defer func() {
 		err = zapLogger.Sync()
 		if err != nil {
@@ -54,7 +54,7 @@ func main() {
 		}
 	}()
 
-	// парсим конфиг
+	// parse config
 	c, err := app.NewConfig(cfgPath)
 	if err != nil {
 		logger.Fatalf("error to parsing config: %v", err)
@@ -62,7 +62,8 @@ func main() {
 
 	// init db
 	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s "+"password=%s dbname=%s sslmode=disable",
+		"host=%s port=%d user=%s "+
+			"password=%s dbname=%s sslmode=disable",
 		c.CfgDB.Host, c.CfgDB.Port, c.CfgDB.Login, c.CfgDB.Password, c.CfgDB.Database,
 	)
 
@@ -81,7 +82,7 @@ func main() {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     RedisAddr,
 		Password: "",
-		DB:       0, // стандартная БД
+		DB:       0,
 	})
 
 	// init ES
@@ -99,15 +100,14 @@ func main() {
 		logger.Warnf("failed to ping Elasticsearch: %v", err)
 	}
 
-	elasicService := elastic.NewService(elasticClient, logger, c.CfgES.Index)
+	elasticService := elastic.NewService(elasticClient, logger, c.CfgES.Index)
 
 	// init and start ETL
 	extractor := etl.NewPostgresExtractor(db, logger)
 	transformer := etl.NewTransformer(logger)
-	loader := etl.NewElasticLoader(elasicService, logger)
+	loader := etl.NewElasticLoader(elasticService, logger)
 
 	pipeline := etl.NewPipeline(extractor, transformer, loader, logger, c.ETLTimeout)
-
 	go pipeline.Run(context.Background())
 
 	// init repository
@@ -117,6 +117,10 @@ func main() {
 	announcementRepository := announcement.NewAnnouncementDBRepository(db, logger)
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 
+	// init Kafka Producer для отправки событий
+	kafkaProducer := kafka.NewProducer([]string{KafkaBrokers}, KafkaTopic, logger)
+	defer kafkaProducer.Close()
+
 	// init router
 	r := mux.NewRouter()
 
@@ -124,7 +128,7 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-	announcementHandlers := handlersAnnouncement.NewAnnouncementHandler(logger, announcementRepository)
+	announcementHandlers := handlersAnnouncement.NewAnnouncementHandler(logger, announcementRepository, kafkaProducer)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()

@@ -57,7 +57,7 @@ func main() {
 	consumer := kafka.NewConsumer(KafkaBrokers, KafkaTopic, KafkaGroupID, logger)
 	defer consumer.Close()
 
-	// Init analytics service
+	// Init analytics repository и service через интерфейсы
 	repo := analytics.NewRepository(db, logger)
 	service := analytics.NewService(repo, logger)
 

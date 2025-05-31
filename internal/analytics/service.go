@@ -6,12 +6,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// Service реализует интерфейс AnalyticsService.
 type Service struct {
-	repo   *Repository
+	repo   AnalyticsRepo
 	logger *zap.SugaredLogger
 }
 
-func NewService(repo *Repository, logger *zap.SugaredLogger) *Service {
+func NewService(repo AnalyticsRepo, logger *zap.SugaredLogger) AnalyticsService {
 	return &Service{
 		repo:   repo,
 		logger: logger,
