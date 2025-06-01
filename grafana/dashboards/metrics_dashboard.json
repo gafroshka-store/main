@@ -3,65 +3,204 @@
   "title": "App Metrics Overview",
   "timezone": "browser",
   "schemaVersion": 16,
-  "version": 1,
+  "version": 3,
+  "refresh": "5s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "panels": [
     {
       "type": "graph",
-      "title": "Go routines",
+      "title": "Go Routines",
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "go_goroutines",
-          "legendFormat": "goroutines",
-          "interval": ""
+          "expr": "go_goroutines{job=\"app\"}",
+          "legendFormat": "Goroutines"
         }
       ],
-      "xaxis": {
-        "mode": "time"
-      },
+      "xaxis": { "mode": "time" },
       "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "show": true
-        }
-      ]
-    },
-    {
-      "type": "stat",
-      "title": "HTTP 2xx/4xx/5xx",
-      "targets": [
-        {
-          "expr": "sum(rate(http_requests_total[1m])) by (status)",
-          "legendFormat": "{{status}}"
-        }
-      ]
-    },
-    {
-      "type": "heatmap",
-      "title": "Request Duration",
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le, path))",
-          "legendFormat": "{{path}}"
-        }
-      ]
+        { "format": "short", "show": true },
+        { "show": true }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 1
     },
     {
       "type": "graph",
-      "title": "Requests Per Second",
+      "title": "OS Threads",
+      "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total[1m]))",
+          "expr": "go_threads{job=\"app\"}",
+          "legendFormat": "OS Threads"
+        }
+      ],
+      "xaxis": { "mode": "time" },
+      "yaxes": [
+        { "format": "short", "show": true },
+        { "show": true }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 2
+    },
+    {
+      "type": "graph",
+      "title": "CPU Usage (Process)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total{job=\"app\"}[1m]) * 100",
+          "legendFormat": "App CPU (%)"
+        }
+      ],
+      "xaxis": { "mode": "time" },
+      "yaxes": [
+        { "format": "percent", "show": true },
+        { "show": true }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 3
+    },
+    {
+      "type": "graph",
+      "title": "Memory Usage (Heap Alloc)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "go_memstats_heap_alloc_bytes{job=\"app\"}",
+          "legendFormat": "Heap Alloc"
+        }
+      ],
+      "xaxis": { "mode": "time" },
+      "yaxes": [
+        { "format": "bytes", "show": true },
+        { "show": true }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 4
+    },
+    {
+      "type": "graph",
+      "title": "Memory Usage (RSS)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"app\"}",
+          "legendFormat": "RSS"
+        }
+      ],
+      "xaxis": { "mode": "time" },
+      "yaxes": [
+        { "format": "bytes", "show": true },
+        { "show": true }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 5
+    },
+    {
+      "type": "graph",
+      "title": "GC Duration (seconds)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(go_gc_duration_seconds_sum{job=\"app\"}[1m])",
+          "legendFormat": "GC duration (sum)"
+        }
+      ],
+      "xaxis": { "mode": "time" },
+      "yaxes": [
+        { "format": "s", "show": true },
+        { "show": true }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 6
+    },
+    {
+      "type": "graph",
+      "title": "GC Count",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(go_gc_duration_seconds_count{job=\"app\"}[1m])",
+          "legendFormat": "GC count"
+        }
+      ],
+      "xaxis": { "mode": "time" },
+      "yaxes": [
+        { "format": "short", "show": true },
+        { "show": true }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "GOMAXPROCS (Scheduler Limit)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "go_sched_gomaxprocs_threads{job=\"app\"}",
+          "legendFormat": "GOMAXPROCS"
+        }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "HTTP Requests by Status Code",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"app\"}[1m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "id": 9
+    },
+    {
+      "type": "heatmap",
+      "title": "Request Duration (95th percentile)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"app\"}[1m])) by (le, path))",
+          "legendFormat": "{{path}}"
+        }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 10
+    },
+    {
+      "type": "graph",
+      "title": "Requests Per Second (RPS)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"app\"}[1m]))",
           "legendFormat": "RPS"
         }
-      ]
-    },
+      ],
+      "xaxis": { "mode": "time" },
+      "yaxes": [
+        { "format": "short", "show": true },
+        { "show": true }
+      ],
+      "lines": true,
+      "connectNulls": true,
+      "id": 11
+    }
   ]
 }
