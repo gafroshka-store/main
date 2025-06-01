@@ -1,10 +1,12 @@
 package announcement
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 
+	elastic "gafroshka-main/internal/elastic_search"
 	types "gafroshka-main/internal/types/announcement"
 	"gafroshka-main/internal/types/errors"
 
@@ -12,14 +14,16 @@ import (
 )
 
 type AnnouncementDBRepository struct {
-	DB     *sql.DB
-	Logger *zap.SugaredLogger
+	DB             *sql.DB
+	Logger         *zap.SugaredLogger
+	ElasticService *elastic.ElasticService
 }
 
-func NewAnnouncementDBRepository(db *sql.DB, l *zap.SugaredLogger) *AnnouncementDBRepository {
+func NewAnnouncementDBRepository(db *sql.DB, l *zap.SugaredLogger, es *elastic.ElasticService) *AnnouncementDBRepository {
 	return &AnnouncementDBRepository{
-		DB:     db,
-		Logger: l,
+		DB:             db,
+		Logger:         l,
+		ElasticService: es,
 	}
 }
 
@@ -110,28 +114,60 @@ func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]Announcement, error) {
 }
 
 func (ar *AnnouncementDBRepository) Search(query string) ([]Announcement, error) {
-	query = strings.ToLower(query)
-	sqlQuery := `
-	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at, 
-		(LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
-	FROM announcement 
-	WHERE is_active = TRUE
-	ORDER BY score DESC 
-	LIMIT 10
-	`
-
-	rows, err := ar.DB.Query(sqlQuery, query)
+	docs, err := ar.ElasticService.SearchByName(context.Background(), query)
 	if err != nil {
-		ar.Logger.Errorf("Error searching announcements: %v", err)
+		ar.Logger.Errorf("Elastic search error: %v", err)
+		return nil, errors.ErrSearch
+	}
+
+	if len(docs) == 0 {
+		return []Announcement{}, nil
+	}
+
+	ids := make([]string, len(docs))
+	for i, doc := range docs {
+		ids[i] = doc.ID
+	}
+
+	// Формируем placeholders: $1, $2, ...
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+
+	queryStr := fmt.Sprintf(`
+		SELECT 
+		    id, 
+		    name, 
+		    description, 
+		    user_seller_id, 
+		    price, 
+		    category, 
+		    discount, 
+		    is_active, 
+		    rating, 
+		    rating_count, 
+		    created_at
+		FROM announcement
+		WHERE id IN (%s)
+	`,
+		strings.Join(placeholders, ","),
+	)
+
+	rows, err := ar.DB.Query(queryStr, args...)
+	if err != nil {
+		ar.Logger.Errorf("PostgreSQL search query failed: %v", err)
 		return nil, errors.ErrDBInternal
 	}
 	defer rows.Close()
 
-	var announcements []Announcement
+	// Сохраняем по ID, чтобы восстановить порядок
+	annByID := make(map[string]Announcement)
 	for rows.Next() {
 		var a Announcement
-		var score int
-		err := rows.Scan(
+		if err := rows.Scan(
 			&a.ID,
 			&a.Name,
 			&a.Description,
@@ -143,15 +179,26 @@ func (ar *AnnouncementDBRepository) Search(query string) ([]Announcement, error)
 			&a.Rating,
 			&a.RatingCount,
 			&a.CreatedAt,
-			&score,
-		)
-		if err != nil {
+		); err != nil {
+			ar.Logger.Errorf("Row scan failed: %v", err)
 			return nil, errors.ErrDBInternal
 		}
-		announcements = append(announcements, a)
+		annByID[a.ID] = a
 	}
 
-	return announcements, nil
+	if err := rows.Err(); err != nil {
+		ar.Logger.Errorf("Rows iteration error: %v", err)
+		return nil, errors.ErrDBInternal
+	}
+
+	var result []Announcement
+	for _, id := range ids {
+		if ann, ok := annByID[id]; ok {
+			result = append(result, ann)
+		}
+	}
+
+	return result, nil
 }
 
 func (ar *AnnouncementDBRepository) GetByID(id string) (*Announcement, error) {
@@ -186,69 +233,6 @@ func (ar *AnnouncementDBRepository) GetByID(id string) (*Announcement, error) {
 	}
 
 	return &a, nil
-}
-
-func (ar *AnnouncementDBRepository) UpdateRating(id string, rate int) (*Announcement, error) {
-	tx, err := ar.DB.Begin()
-	if err != nil {
-		return nil, errors.ErrDBInternal
-	}
-	defer tx.Rollback() // nolint:errcheck
-
-	var currentRating float64
-	var ratingCount int
-
-	err = tx.QueryRow(
-		"SELECT rating, rating_count FROM announcement WHERE id = $1 FOR UPDATE",
-		id,
-	).Scan(&currentRating, &ratingCount)
-
-	if err != nil {
-		return nil, errors.ErrDBInternal
-	}
-
-	newRating := float64(rate)
-	if ratingCount > 0 {
-		newRating = (currentRating + float64(rate)) / 2
-	}
-
-	_, err = tx.Exec(
-		"UPDATE announcement SET rating = $1, rating_count = rating_count + 1 WHERE id = $2",
-		newRating,
-		id,
-	)
-
-	if err != nil {
-		return nil, errors.ErrDBInternal
-	}
-
-	var updated Announcement
-	err = tx.QueryRow(`
-		SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
-		FROM announcement 
-		WHERE id = $1
-	`, id).Scan(
-		&updated.ID,
-		&updated.Name,
-		&updated.Description,
-		&updated.UserSellerID,
-		&updated.Price,
-		&updated.Category,
-		&updated.Discount,
-		&updated.IsActive,
-		&updated.Rating,
-		&updated.RatingCount,
-		&updated.CreatedAt,
-	)
-	if err != nil {
-		return nil, errors.ErrDBInternal
-	}
-
-	if err = tx.Commit(); err != nil {
-		return nil, errors.ErrDBInternal
-	}
-
-	return &updated, nil
 }
 
 func (ar *AnnouncementDBRepository) GetInfoForShoppingCart(ids []string) ([]types.InfoForSC, error) {

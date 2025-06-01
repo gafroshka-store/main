@@ -35,7 +35,8 @@ CREATE TABLE announcement (
     is_active BOOLEAN DEFAULT TRUE NOT NULL,
     rating FLOAT DEFAULT 0.0,
     rating_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    searching BOOLEAN DEFAULT FALSE NOT NULL
 );
 
 CREATE TABLE announcement_feedback (

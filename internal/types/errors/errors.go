@@ -30,6 +30,7 @@ var (
 	ErrInvalidJSONPayload = errors.New("invalid JSON payload")
 
 	ErrIndexing = errors.New("indexing error")
+	ErrSearch   = errors.New("search error")
 
 	ErrAlreadyLeftFeedback = errors.New("user has already left feedback for this announcement")
 )

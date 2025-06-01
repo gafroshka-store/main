@@ -16,12 +16,14 @@ func NewTransformer(logger *zap.SugaredLogger) *Transformer {
 	}
 }
 
+// Transform - переводит документы из формата хранения в PostgreSQL в ElasticDoc для хранения в ES
+// Принимает массив Announcement, возвращает массив ElasticDoc
 func (t *Transformer) Transform(input []announcement.Announcement) []elastic.ElasticDoc {
 	docs := make([]elastic.ElasticDoc, 0, len(input))
 	for _, a := range input {
 		docs = append(docs, elastic.ElasticDoc{
 			ID:          a.ID,
-			Title:       a.Name,
+			Name:        a.Name,
 			Description: a.Description,
 			Category:    a.Category,
 		})

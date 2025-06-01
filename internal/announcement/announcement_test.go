@@ -5,6 +5,8 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	elastic "gafroshka-main/internal/elastic_search"
+	"github.com/elastic/go-elasticsearch/v8"
 	"regexp"
 	"testing"
 	"time"
@@ -25,7 +27,24 @@ func TestAnnouncementDBRepository_Create(t *testing.T) {
 	defer db.Close()
 
 	logger := zaptest.NewLogger(t).Sugar()
-	repo := NewAnnouncementDBRepository(db, logger)
+
+	elasticClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{
+			"http://elasticsearch:9200",
+		},
+	})
+	if err != nil {
+		logger.Errorf("failed to create elastic client: %v", err)
+	}
+
+	_, err = elasticClient.Ping()
+	if err != nil {
+		logger.Warnf("failed to ping Elasticsearch: %v", err)
+	}
+
+	elasicService := elastic.NewService(elasticClient, logger, "announcement")
+
+	repo := NewAnnouncementDBRepository(db, logger, elasicService)
 
 	tests := []struct {
 		name        string
@@ -131,7 +150,24 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 	defer db.Close()
 
 	logger := zaptest.NewLogger(t).Sugar()
-	repo := NewAnnouncementDBRepository(db, logger)
+
+	elasticClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{
+			"http://elasticsearch:9200",
+		},
+	})
+	if err != nil {
+		logger.Errorf("failed to create elastic client: %v", err)
+	}
+
+	_, err = elasticClient.Ping()
+	if err != nil {
+		logger.Warnf("failed to ping Elasticsearch: %v", err)
+	}
+
+	elasicService := elastic.NewService(elasticClient, logger, "announcement")
+
+	repo := NewAnnouncementDBRepository(db, logger, elasicService)
 
 	now := time.Now()
 
@@ -222,298 +258,30 @@ func TestAnnouncementDBRepository_GetTopN(t *testing.T) {
 	}
 }
 
-func TestAnnouncementDBRepository_Search(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-	logger := zaptest.NewLogger(t).Sugar()
-	repo := NewAnnouncementDBRepository(db, logger)
-	now := time.Now()
-
-	tests := []struct {
-		name        string
-		query       string
-		mock        func()
-		expected    []Announcement
-		expectError error
-	}{
-		{
-			name:  "successful search with multiple matches",
-			query: "test",
-			mock: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, 
-					name, 
-					description, 
-					user_seller_id, 
-					price, 
-					category, discount, is_active, rating, rating_count, created_at,
-                        (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
-                    FROM announcement 
-                    WHERE is_active = TRUE
-                    ORDER BY score DESC 
-                    LIMIT 10
-                `)).WithArgs("test").
-					WillReturnRows(sqlmock.NewRows([]string{
-						"id", "name", "description", "user_seller_id",
-						"price", "category", "discount", "is_active",
-						"rating", "rating_count", "created_at", "score",
-					}).
-						AddRow(
-							"1", "Test item", "Description", "123",
-							1000, 1, 0, true,
-							4.5, 2, now, 3,
-						).
-						AddRow(
-							"2", "Test test", "Desc", "456",
-							2000, 2, 5, true,
-							4.0, 5, now, 2,
-						))
-			},
-			expected: []Announcement{
-				{
-					ID:           "1",
-					Name:         "Test item",
-					Description:  "Description",
-					UserSellerID: "123",
-					Price:        1000,
-					Category:     1,
-					Discount:     0,
-					IsActive:     true,
-					Rating:       4.5,
-					RatingCount:  2,
-					CreatedAt:    now,
-				},
-				{
-					ID:           "2",
-					Name:         "Test test",
-					Description:  "Desc",
-					UserSellerID: "456",
-					Price:        2000,
-					Category:     2,
-					Discount:     5,
-					IsActive:     true,
-					Rating:       4.0,
-					RatingCount:  5,
-					CreatedAt:    now,
-				},
-			},
-			expectError: nil,
-		},
-		{
-			name:  "search with special characters",
-			query: "test' OR 1=1--",
-			mock: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, 
-					name, 
-					description, 
-					user_seller_id, 
-					price, 
-					category, 
-					discount, is_active, rating, rating_count, created_at,
-                        (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
-                    FROM announcement 
-                    WHERE is_active = TRUE
-                    ORDER BY score DESC 
-                    LIMIT 10
-                `)).WithArgs("test' or 1=1--").
-					WillReturnRows(sqlmock.NewRows([]string{
-						"id", "name", "description", "user_seller_id",
-						"price", "category", "discount", "is_active",
-						"rating", "rating_count", "created_at", "score",
-					}))
-			},
-			expected:    []Announcement{},
-			expectError: nil,
-		},
-		{
-			name:  "case insensitivity check",
-			query: "TEST",
-			mock: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, 
-					name, 
-					description, 
-					user_seller_id, 
-					price, 
-					category, discount, is_active, rating, rating_count, created_at,
-                        (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
-                    FROM announcement 
-                    WHERE is_active = TRUE
-                    ORDER BY score DESC 
-                    LIMIT 10
-                `)).WithArgs("test").
-					WillReturnRows(sqlmock.NewRows([]string{
-						"id", "name", "description", "user_seller_id",
-						"price", "category", "discount", "is_active",
-						"rating", "rating_count", "created_at", "score",
-					}).
-						AddRow(
-							"3", "TEST", "UPPER CASE", "789",
-							3000, 3, 10, true,
-							4.8, 3, now, 1,
-						))
-			},
-			expected: []Announcement{
-				{
-					ID:           "3",
-					Name:         "TEST",
-					Description:  "UPPER CASE",
-					UserSellerID: "789",
-
-					Price:       3000,
-					Category:    3,
-					Discount:    10,
-					IsActive:    true,
-					Rating:      4.8,
-					RatingCount: 3,
-					CreatedAt:   now,
-				},
-			},
-			expectError: nil,
-		},
-		{
-			name:  "inactive announcements filtered",
-			query: "active",
-			mock: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, 
-					name, 
-					description, 
-					user_seller_id, 
-					price, 
-					category, discount, is_active, rating, rating_count, created_at,
-                        (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
-                    FROM announcement 
-                    WHERE is_active = TRUE
-                    ORDER BY score DESC 
-                    LIMIT 10
-                `)).WithArgs("active").
-					WillReturnRows(sqlmock.NewRows([]string{
-						"id", "name", "description", "user_seller_id",
-						"price", "category", "discount", "is_active",
-						"rating", "rating_count", "created_at", "score",
-					}))
-			},
-			expected:    []Announcement{},
-			expectError: nil,
-		},
-		{
-			name:  "scan error handling",
-			query: "invalid",
-			mock: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, 
-					name, 
-					description, 
-					user_seller_id, 
-					price, 
-					category, discount, is_active, rating, rating_count, created_at,
-                        (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
-                    FROM announcement 
-                    WHERE is_active = TRUE
-                    ORDER BY score DESC 
-                    LIMIT 10
-                `)).WithArgs("invalid").
-					WillReturnRows(sqlmock.NewRows([]string{
-						"id", "name", "rating", // Неполный набор колонок
-					}).AddRow("5", "Invalid", "not_a_float"))
-			},
-			expected:    nil,
-			expectError: customErrors.ErrDBInternal,
-		},
-		{
-			name:  "result limit enforcement",
-			query: "limit",
-			mock: func() {
-				rows := sqlmock.NewRows([]string{
-					"id", "name", "description", "user_seller_id",
-					"price", "category", "discount", "is_active",
-					"rating", "rating_count", "created_at", "score",
-				})
-				for i := 0; i < 10; i++ {
-					rows.AddRow(
-						fmt.Sprintf("%d", i),
-						"Item",
-						"Desc",
-						"123",
-						1000,
-						1,
-						0,
-						true,
-						4.0,
-						1,
-						now,
-						1,
-					)
-				}
-				mock.ExpectQuery(regexp.QuoteMeta(`
-                    SELECT id, 
-					name, 
-					description, 
-					user_seller_id, 
-					price, 
-					category, discount, is_active, rating, rating_count, created_at,
-                        (LENGTH(name) - LENGTH(REPLACE(LOWER(name), $1, ''))) AS score
-                    FROM announcement 
-                    WHERE is_active = TRUE
-                    ORDER BY score DESC 
-                    LIMIT 10
-                `)).WithArgs("limit").
-					WillReturnRows(rows)
-			},
-			expected: func() []Announcement {
-				announcements := make([]Announcement, 10)
-				for i := range announcements {
-					announcements[i] = Announcement{
-						ID:           fmt.Sprintf("%d", i),
-						Name:         "Item",
-						Description:  "Desc",
-						UserSellerID: "123",
-						Price:        1000,
-						Category:     1,
-						Discount:     0,
-						IsActive:     true,
-						Rating:       4.0,
-						RatingCount:  1,
-						CreatedAt:    now,
-					}
-				}
-				return announcements
-			}(),
-			expectError: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mock()
-			result, err := repo.Search(tt.query)
-			if tt.expectError != nil {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectError.Error())
-			} else {
-				assert.NoError(t, err)
-			}
-			assert.Equal(t, len(tt.expected), len(result))
-			for i := range tt.expected {
-				if i < len(result) {
-					assert.Equal(t, tt.expected[i], result[i])
-				}
-			}
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
-
 func TestAnnouncementDBRepository_GetByID(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
 
 	logger := zaptest.NewLogger(t).Sugar()
-	repo := NewAnnouncementDBRepository(db, logger)
+
+	elasticClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{
+			"http://elasticsearch:9200",
+		},
+	})
+	if err != nil {
+		logger.Errorf("failed to create elastic client: %v", err)
+	}
+
+	_, err = elasticClient.Ping()
+	if err != nil {
+		logger.Warnf("failed to ping Elasticsearch: %v", err)
+	}
+
+	elasicService := elastic.NewService(elasticClient, logger, "announcement")
+
+	repo := NewAnnouncementDBRepository(db, logger, elasicService)
 
 	now := time.Now()
 
@@ -603,118 +371,30 @@ func TestAnnouncementDBRepository_GetByID(t *testing.T) {
 	}
 }
 
-func TestAnnouncementDBRepository_UpdateRating(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	logger := zaptest.NewLogger(t).Sugar()
-	repo := NewAnnouncementDBRepository(db, logger)
-
-	now := time.Now()
-
-	tests := []struct {
-		name        string
-		id          string
-		rate        int
-		mock        func()
-		expected    *Announcement
-		expectError error
-	}{
-		{
-			name: "first rating",
-			id:   "1",
-			rate: 5,
-			mock: func() {
-				mock.ExpectBegin()
-				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT rating, rating_count 
-					FROM announcement 
-					WHERE id = $1 FOR UPDATE
-				`)).
-					WithArgs("1").
-					WillReturnRows(sqlmock.NewRows([]string{"rating", "rating_count"}).AddRow(0.0, 0))
-
-				mock.ExpectExec(regexp.QuoteMeta(`
-					UPDATE announcement 
-					SET rating = $1, rating_count = rating_count + 1 
-					WHERE id = $2
-				`)).
-					WithArgs(5.0, "1").
-					WillReturnResult(sqlmock.NewResult(0, 1))
-
-				mock.ExpectQuery(regexp.QuoteMeta(`
-					SELECT id, 
-					name, 
-					description, 
-					user_seller_id, 
-					price, 
-					category, discount, 
-					is_active, 
-					rating, rating_count, created_at 
-					FROM announcement 
-					WHERE id = $1
-				`)).
-					WithArgs("1").
-					WillReturnRows(sqlmock.NewRows([]string{
-						"id", "name", "description", "user_seller_id",
-						"price", "category", "discount", "is_active",
-						"rating", "rating_count", "created_at",
-					}).
-						AddRow(
-							"1", "Test", "Desc", "123",
-							100, 1, 0, true,
-							5.0, 1, now,
-						))
-
-				mock.ExpectCommit()
-			},
-			expected: &Announcement{
-				ID:           "1",
-				Name:         "Test",
-				Description:  "Desc",
-				UserSellerID: "123",
-				Price:        100,
-				Category:     1,
-				Discount:     0,
-				IsActive:     true,
-				Rating:       5.0,
-				RatingCount:  1,
-				CreatedAt:    now,
-			},
-			expectError: nil,
-		},
-		{
-			name: "transaction error",
-			id:   "3",
-			rate: 5,
-			mock: func() {
-				mock.ExpectBegin().WillReturnError(errors.New("tx error"))
-			},
-			expected:    nil,
-			expectError: customErrors.ErrDBInternal,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mock()
-
-			result, err := repo.UpdateRating(tt.id, tt.rate)
-			assert.Equal(t, tt.expected, result)
-			assert.Equal(t, tt.expectError, err)
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
-
 func TestAnnouncementDBRepository_GetInfoForShoppingCart(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
 
 	logger := zaptest.NewLogger(t).Sugar()
-	repo := NewAnnouncementDBRepository(db, logger)
+
+	elasticClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{
+			"http://elasticsearch:9200",
+		},
+	})
+	if err != nil {
+		logger.Errorf("failed to create elastic client: %v", err)
+	}
+
+	_, err = elasticClient.Ping()
+	if err != nil {
+		logger.Warnf("failed to ping Elasticsearch: %v", err)
+	}
+
+	elasicService := elastic.NewService(elasticClient, logger, "announcement")
+
+	repo := NewAnnouncementDBRepository(db, logger, elasicService)
 
 	tests := []struct {
 		name        string

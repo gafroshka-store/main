@@ -56,7 +56,7 @@ func TestIndexAnnouncement(t *testing.T) {
 			name: "successful indexing",
 			doc: esDoc.ElasticDoc{
 				ID:          "test-id",
-				Title:       "test-title",
+				Name:        "test-title",
 				Description: "test-description",
 				Category:    1,
 			},
@@ -77,7 +77,7 @@ func TestIndexAnnouncement(t *testing.T) {
 			name: "elasticsearch error",
 			doc: esDoc.ElasticDoc{
 				ID:          "test-id",
-				Title:       "test-title",
+				Name:        "test-title",
 				Description: "test-description",
 				Category:    1,
 			},
@@ -93,7 +93,7 @@ func TestIndexAnnouncement(t *testing.T) {
 			name: "request error",
 			doc: esDoc.ElasticDoc{
 				ID:          "test-id",
-				Title:       "test-title",
+				Name:        "test-title",
 				Description: "test-description",
 				Category:    1,
 			},
@@ -136,13 +136,13 @@ func TestBulkIndex(t *testing.T) {
 			docs: []esDoc.ElasticDoc{
 				{
 					ID:          "test-id-1",
-					Title:       "test-title-1",
+					Name:        "test-title-1",
 					Description: "test-description-1",
 					Category:    1,
 				},
 				{
 					ID:          "test-id-2",
-					Title:       "test-title-2",
+					Name:        "test-title-2",
 					Description: "test-description-2",
 					Category:    2,
 				},
@@ -179,7 +179,7 @@ func TestBulkIndex(t *testing.T) {
 			docs: []esDoc.ElasticDoc{
 				{
 					ID:          "test-id-1",
-					Title:       "test-title-1",
+					Name:        "test-title-1",
 					Description: "test-description-1",
 					Category:    1,
 				},
@@ -194,7 +194,7 @@ func TestBulkIndex(t *testing.T) {
 			docs: []esDoc.ElasticDoc{
 				{
 					ID:          "test-id-1",
-					Title:       "test-title-1",
+					Name:        "test-title-1",
 					Description: "test-description-1",
 					Category:    1,
 				},
