@@ -10,7 +10,7 @@ CREATE TABLE users (
     email VARCHAR(40) NOT NULL UNIQUE,
     phone_number VARCHAR(12) NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    balance DECIMAL DEFAULT 0.0 NOT NULL,
+    balance BIGINT DEFAULT 0 NOT NULL,
     deals_count INTEGER DEFAULT 0 NOT NULL,
     rating FLOAT DEFAULT 0.0 NOT NULL,
     rating_count INTEGER DEFAULT 0 NOT NULL

@@ -155,10 +155,25 @@ services:
     networks:
       - shared-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    networks:
+      - shared-network
+    depends_on:
+      - app
+
 volumes:
   db_data:
   redis_data:
   esdata:
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/esdata
   db_analytics_data:
 
 networks:

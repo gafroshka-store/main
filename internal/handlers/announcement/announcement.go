@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"gafroshka-main/internal/kafka"
-	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 
 	"gafroshka-main/internal/announcement"
 	typesAnn "gafroshka-main/internal/types/announcement"
@@ -78,7 +79,7 @@ func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем событие "view" в Kafka, если есть user_id в запросе
-	userID := r.URL.Query().Get("user_id")
+	userID := vars["user_id"]
 	if userID != "" {
 		event := kafka.Event{
 			UserID:     userID,
@@ -178,7 +179,8 @@ func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем событие "search" в Kafka, если есть user_id в запросе
-	userID := r.URL.Query().Get("user_id")
+	vars := mux.Vars(r)
+	userID := vars["user_id"]
 	if userID != "" {
 		event := kafka.Event{
 			UserID:     userID,

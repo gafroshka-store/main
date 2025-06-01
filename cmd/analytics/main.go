@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"gafroshka-main/internal/analytics"
 	"gafroshka-main/internal/kafka"
-	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 
 	_ "github.com/lib/pq"
 )

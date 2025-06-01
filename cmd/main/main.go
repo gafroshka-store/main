@@ -160,10 +160,10 @@ func main() {
 
 	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
 
-	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST")
+	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST") //
 	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.DeleteFromShoppingCart).Methods("DELETE")
 	authRouter.HandleFunc("/cart/{userID}", shoppingCartHandlers.GetCart).Methods("GET")
-	authRouter.HandleFunc("/cart/{userID}/purchase", shoppingCartHandlers.PurchaseFromCart).Methods("POST")
+	authRouter.HandleFunc("/cart/{userID}/purchase", shoppingCartHandlers.PurchaseFromCart).Methods("POST") //
 
 	// Ручки НЕ требующие авторизации
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
@@ -174,11 +174,11 @@ func main() {
 	noAuthRouter.HandleFunc("/user/{id}/balance", userHandlers.GetBalance).Methods("GET")
 
 	noAuthRouter.HandleFunc("/user/feedback/user/{id}", userFeedbackHandlers.GetByUserID).Methods("GET")
-	noAuthRouter.HandleFunc("/announcement/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
+	noAuthRouter.HandleFunc("/announcement/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET") //
 
-	noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
-	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")
-	noAuthRouter.HandleFunc("/announcements/search", annHandlers.Search).Methods("GET")
+	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")            //
+	noAuthRouter.HandleFunc("/announcement/{id}/{user_id}", annHandlers.GetByID).Methods("GET")   //
+	noAuthRouter.HandleFunc("/announcements/search/{user_id}", annHandlers.Search).Methods("GET") //
 
 	logger.Infow("starting server",
 		"type", "START",

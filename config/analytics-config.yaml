@@ -4,6 +4,6 @@ db:
   password: love
   port: 5434
   database: analytics
-  host: localhost
+  host: db-analytics
 max_open_conns: 10
 
