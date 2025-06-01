@@ -19,6 +19,7 @@ import (
 )
 
 func TestUserDBRepository_CreateUser(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -74,6 +75,7 @@ func TestUserDBRepository_CreateUser(t *testing.T) {
 }
 
 func TestUserDBRepository_CheckUser(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -158,6 +160,7 @@ func TestUserDBRepository_CheckUser(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockQuery()
 			user, err := repository.CheckUser(tt.email, tt.password)
@@ -176,6 +179,7 @@ func TestUserDBRepository_CheckUser(t *testing.T) {
 }
 
 func TestUserDBRepository_Info(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -257,6 +261,7 @@ func TestUserDBRepository_Info(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockQuery()
 
@@ -269,6 +274,7 @@ func TestUserDBRepository_Info(t *testing.T) {
 }
 
 func TestUserDBRepository_ChangeProfile(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -386,12 +392,158 @@ func TestUserDBRepository_ChangeProfile(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockQuery()
 
 			result, err := repository.ChangeProfile(tt.userID, tt.update)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.Equal(t, tt.expectError, err)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestUserDBRepository_GetBalanceByUserID(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	logger := zaptest.NewLogger(t).Sugar()
+	repository := NewUserDBRepository(db, logger)
+
+	tests := []struct {
+		name        string
+		userID      string
+		mockQuery   func()
+		wantBalance int64
+		wantErr     error
+	}{
+		{
+			name:   "success",
+			userID: "123",
+			mockQuery: func() {
+				mock.ExpectQuery(`SELECT balance FROM users WHERE id = \$1`).
+					WithArgs("123").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(52))
+			},
+			wantBalance: 52,
+			wantErr:     nil,
+		},
+
+		{
+			name:   "not found",
+			userID: "124",
+			mockQuery: func() {
+				mock.ExpectQuery(`SELECT balance FROM users WHERE id = \$1`).
+					WithArgs("124").WillReturnError(sql.ErrNoRows)
+			},
+			wantBalance: 0,
+			wantErr:     myErr.ErrNotFound,
+		},
+
+		{
+			name:   "db error on query",
+			userID: "125",
+			mockQuery: func() {
+				mock.ExpectQuery(`SELECT balance FROM users WHERE id = \$1`).
+					WithArgs("125").WillReturnError(myErr.ErrDBInternal)
+			},
+			wantBalance: 0,
+			wantErr:     myErr.ErrDBInternal,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockQuery()
+			gotBalance, err := repository.GetBalanceByUserID(tt.userID)
+			assert.Equal(t, tt.wantBalance, gotBalance)
+			assert.Equal(t, tt.wantErr, err)
+			assert.NoError(t, mock.ExpectationsWereMet())
+
+		})
+	}
+}
+
+func TestUserDBRepository_TopUpBalance(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("unexpected error when opening stub db: %s", err)
+	}
+	defer db.Close()
+
+	logger := zaptest.NewLogger(t).Sugar()
+	repository := NewUserDBRepository(db, logger)
+
+	tests := []struct {
+		name        string
+		userID      string
+		amount      int64
+		mockQuery   func()
+		wantBalance int64
+		wantErr     error
+	}{
+		{
+			name:   "success",
+			userID: "123",
+			amount: 100,
+			mockQuery: func() {
+				mock.ExpectQuery(`UPDATE users SET balance = balance \+ \$1 WHERE id = \$2 RETURNING balance`).
+					WithArgs(int64(100), "123").
+					WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(150))
+			},
+			wantBalance: 150,
+			wantErr:     nil,
+		},
+		{
+			name:   "invalid amount",
+			userID: "123",
+			amount: 0,
+			mockQuery: func() {
+				// No DB call expected
+			},
+			wantBalance: 0,
+			wantErr:     myErr.ErrInvalidAmount,
+		},
+		{
+			name:   "user not found",
+			userID: "124",
+			amount: 50,
+			mockQuery: func() {
+				mock.ExpectQuery(`UPDATE users SET balance = balance \+ \$1 WHERE id = \$2 RETURNING balance`).
+					WithArgs(int64(50), "124").
+					WillReturnError(sql.ErrNoRows)
+			},
+			wantBalance: 0,
+			wantErr:     myErr.ErrNotFound,
+		},
+		{
+			name:   "db error",
+			userID: "125",
+			amount: 30,
+			mockQuery: func() {
+				mock.ExpectQuery(`UPDATE users SET balance = balance \+ \$1 WHERE id = \$2 RETURNING balance`).
+					WithArgs(int64(30), "125").
+					WillReturnError(errors.New("db failure"))
+			},
+			wantBalance: 0,
+			wantErr:     myErr.ErrDBInternal,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.mockQuery != nil {
+				tt.mockQuery()
+			}
+			gotBalance, err := repository.TopUpBalance(tt.userID, tt.amount)
+			assert.Equal(t, tt.wantBalance, gotBalance)
+			assert.Equal(t, tt.wantErr, err)
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}

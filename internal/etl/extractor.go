@@ -5,7 +5,6 @@ import (
 	"gafroshka-main/internal/announcement"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
-	"time"
 )
 
 type PostgresExtractor struct {
@@ -20,15 +19,17 @@ func NewPostgresExtractor(db *sql.DB, logger *zap.SugaredLogger) *PostgresExtrac
 	}
 }
 
-func (e *PostgresExtractor) ExtractNew(ctx context.Context, since time.Time) ([]announcement.Announcement, error) {
+// ExtractNew - достает новые объявления из поиска
+// Возвращает массив объявлений, которые еще не добавлены в полнотекстовый поиск, и error
+func (e *PostgresExtractor) ExtractNew(ctx context.Context) ([]announcement.Announcement, error) {
 	query :=
 		`
 		SELECT id, name, description, category, user_seller_id, created_at
-		FROM announcements
-		WHERE created_at >= $1 AND is_active = true
+		FROM announcement
+		WHERE searching = FALSE AND is_active = TRUE
 		`
 
-	rows, err := e.DB.QueryContext(ctx, query, since)
+	rows, err := e.DB.QueryContext(ctx, query)
 	if err != nil {
 		e.Logger.Error("Failed to executing query", zap.Error(err))
 

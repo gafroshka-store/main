@@ -30,6 +30,7 @@ func NewPipeline(
 	}
 }
 
+// Run - ETL pipeline, добавляет новые объявления в поиск, запускается через оперделенные промежутки времени
 func (p *Pipeline) Run(ctx context.Context) {
 	ticker := time.NewTicker(p.interval)
 	defer ticker.Stop()
@@ -43,11 +44,8 @@ func (p *Pipeline) Run(ctx context.Context) {
 		case <-ticker.C:
 			p.logger.Infow("Running ETL pipeline iteration")
 
-			now := time.Now()
-			from := now.Add(-p.interval)
-
 			// EXTRACT
-			announcements, err := p.extractor.ExtractNew(ctx, from)
+			announcements, err := p.extractor.ExtractNew(ctx)
 			if err != nil {
 				p.logger.Errorw("Extracting failed", zap.Error(err))
 

@@ -19,3 +19,7 @@ type CreateUser struct {
 	PhoneNumber string    `json:"phone_number"`
 	Password    string    `json:"password"`
 }
+
+type Balance struct {
+	Balance int64 `json:"balance"`
+}

@@ -31,8 +31,8 @@ func TestPostgresExtractor_ExtractNew(t *testing.T) {
 					AddRow("id2", "name2", "desc2", 2, "seller2", time.Now())
 				mock.ExpectQuery(regexp.QuoteMeta(`
 					SELECT id, name, description, category, user_seller_id, created_at
-					FROM announcements
-					WHERE created_at >= $1 AND is_active = true
+					FROM announcement
+					WHERE searching = FALSE AND is_active = TRUE
 				`)).WillReturnRows(rows)
 			},
 			expectedError: false,
@@ -43,8 +43,8 @@ func TestPostgresExtractor_ExtractNew(t *testing.T) {
 			mockQuery: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(`
 					SELECT id, name, description, category, user_seller_id, created_at
-					FROM announcements
-					WHERE created_at >= $1 AND is_active = true
+					FROM announcement
+					WHERE searching = FALSE AND is_active = TRUE
 				`)).WillReturnError(errors.New("query failed"))
 			},
 			expectedError: true,
@@ -56,8 +56,8 @@ func TestPostgresExtractor_ExtractNew(t *testing.T) {
 					AddRow("id1", "name1", "desc1", 1, "seller1", time.Now())
 				mock.ExpectQuery(regexp.QuoteMeta(`
 					SELECT id, name, description, category, user_seller_id, created_at
-					FROM announcements
-					WHERE created_at >= $1 AND is_active = true
+					FROM announcement
+					WHERE searching = FALSE AND is_active = TRUE
 				`)).WillReturnRows(rows).RowsWillBeClosed()
 			},
 			expectedError: false,
@@ -77,9 +77,8 @@ func TestPostgresExtractor_ExtractNew(t *testing.T) {
 
 			extractor := etl.NewPostgresExtractor(db, logger)
 			ctx := context.Background()
-			since := time.Now().Add(-time.Hour)
 
-			results, err := extractor.ExtractNew(ctx, since)
+			results, err := extractor.ExtractNew(ctx)
 
 			if tt.expectedError && err == nil {
 				t.Errorf("expected error but got none")
@@ -124,7 +123,7 @@ func TestTransformer_Transform(t *testing.T) {
 			expect: []elastic.ElasticDoc{
 				{
 					ID:          "1",
-					Title:       "Title",
+					Name:        "Title",
 					Description: "Desc",
 					Category:    1,
 				},
@@ -137,8 +136,8 @@ func TestTransformer_Transform(t *testing.T) {
 				{ID: "2", Name: "A2", Description: "D2", Category: 2},
 			},
 			expect: []elastic.ElasticDoc{
-				{ID: "1", Title: "A1", Description: "D1", Category: 1},
-				{ID: "2", Title: "A2", Description: "D2", Category: 2},
+				{ID: "1", Name: "A1", Description: "D1", Category: 1},
+				{ID: "2", Name: "A2", Description: "D2", Category: 2},
 			},
 		},
 	}

@@ -47,12 +47,6 @@ type fakeRepo struct {
 	lastSearchQuery  string
 	returnSearchAnns []repoAnn.Announcement
 	returnSearchErr  error
-
-	// Для UpdateRating
-	lastUpdateRatingID    string
-	lastUpdateRatingValue int
-	returnUpdateRatingAnn *repoAnn.Announcement
-	returnUpdateRatingErr error
 }
 
 func (f *fakeRepo) Create(a typesAnn.CreateAnnouncement) (*repoAnn.Announcement, error) {
@@ -76,10 +70,9 @@ func (f *fakeRepo) Search(query string) ([]repoAnn.Announcement, error) {
 	return f.returnSearchAnns, f.returnSearchErr
 }
 
-func (f *fakeRepo) UpdateRating(id string, rate int) (*repoAnn.Announcement, error) {
-	f.lastUpdateRatingID = id
-	f.lastUpdateRatingValue = rate
-	return f.returnUpdateRatingAnn, f.returnUpdateRatingErr
+// Add stub for GetInfoForShoppingCart to satisfy AnnouncementRepo interface.
+func (f *fakeRepo) GetInfoForShoppingCart(ids []string) ([]typesAnn.InfoForSC, error) {
+	return nil, nil
 }
 
 // fakeProducer реализует интерфейс kafka.EventProducer
@@ -624,154 +617,5 @@ func TestSearch_Success_WithUser(t *testing.T) {
 	}
 	if len(sent.Categories) != 1 || sent.Categories[0] != expectedAnns[0].Category {
 		t.Errorf("expected event.Categories=[4], got %v", sent.Categories)
-	}
-}
-
-// ----------------------------
-// Тесты для метода UpdateRating
-// ----------------------------
-
-func TestUpdateRating_MissingID(t *testing.T) {
-	logger := zapTestLogger(t)
-	repo := &fakeRepo{}
-	prod := &fakeProducer{}
-	handler := NewAnnouncementHandler(logger, repo, prod)
-
-	req := httptest.NewRequest(http.MethodPost, "/announcement//rating", bytes.NewBufferString(`{"rating":5}`))
-	rr := httptest.NewRecorder()
-
-	r := mux.NewRouter()
-	r.HandleFunc("/announcement/{id}/rating", handler.UpdateRating).Methods(http.MethodPost)
-	r.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusMovedPermanently {
-		t.Errorf("expected status 400, got %d", rr.Code)
-	}
-}
-
-func TestUpdateRating_InvalidJSON(t *testing.T) {
-	logger := zapTestLogger(t)
-	repo := &fakeRepo{}
-	prod := &fakeProducer{}
-	handler := NewAnnouncementHandler(logger, repo, prod)
-
-	req := httptest.NewRequest(http.MethodPost, "/announcement/ann-001/rating", bytes.NewBufferString(`{bad json}`))
-	rr := httptest.NewRecorder()
-
-	r := mux.NewRouter()
-	r.HandleFunc("/announcement/{id}/rating", handler.UpdateRating).Methods(http.MethodPost)
-	r.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusBadRequest {
-		t.Errorf("expected status 400, got %d", rr.Code)
-	}
-}
-
-func TestUpdateRating_InvalidRatingValue(t *testing.T) {
-	logger := zapTestLogger(t)
-	repo := &fakeRepo{}
-	prod := &fakeProducer{}
-	handler := NewAnnouncementHandler(logger, repo, prod)
-
-	body, _ := json.Marshal(map[string]int{"rating": 0})
-	req := httptest.NewRequest(http.MethodPost, "/announcement/ann-002/rating", bytes.NewBuffer(body))
-	rr := httptest.NewRecorder()
-
-	r := mux.NewRouter()
-	r.HandleFunc("/announcement/{id}/rating", handler.UpdateRating).Methods(http.MethodPost)
-	r.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusBadRequest {
-		t.Errorf("expected status 400, got %d", rr.Code)
-	}
-}
-
-func TestUpdateRating_NotFound(t *testing.T) {
-	logger := zapTestLogger(t)
-	repo := &fakeRepo{returnUpdateRatingErr: myErr.ErrNotFound}
-	prod := &fakeProducer{}
-	handler := NewAnnouncementHandler(logger, repo, prod)
-
-	body, _ := json.Marshal(map[string]int{"rating": 3})
-	req := httptest.NewRequest(http.MethodPost, "/announcement/unknown/rating", bytes.NewBuffer(body))
-	rr := httptest.NewRecorder()
-
-	r := mux.NewRouter()
-	r.HandleFunc("/announcement/{id}/rating", handler.UpdateRating).Methods(http.MethodPost)
-	r.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusNotFound {
-		t.Errorf("expected status 404, got %d", rr.Code)
-	}
-	if repo.lastUpdateRatingID != "unknown" {
-		t.Errorf("expected UpdateRating called with id=\"unknown\", got %q", repo.lastUpdateRatingID)
-	}
-	if repo.lastUpdateRatingValue != 3 {
-		t.Errorf("expected UpdateRating called with rate=3, got %d", repo.lastUpdateRatingValue)
-	}
-}
-
-func TestUpdateRating_RepoError(t *testing.T) {
-	logger := zapTestLogger(t)
-	repo := &fakeRepo{returnUpdateRatingErr: errors.New("db fail")}
-	prod := &fakeProducer{}
-	handler := NewAnnouncementHandler(logger, repo, prod)
-
-	body, _ := json.Marshal(map[string]int{"rating": 4})
-	req := httptest.NewRequest(http.MethodPost, "/announcement/ann-003/rating", bytes.NewBuffer(body))
-	rr := httptest.NewRecorder()
-
-	r := mux.NewRouter()
-	r.HandleFunc("/announcement/{id}/rating", handler.UpdateRating).Methods(http.MethodPost)
-	r.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusInternalServerError {
-		t.Errorf("expected status 500, got %d", rr.Code)
-	}
-}
-
-func TestUpdateRating_Success(t *testing.T) {
-	logger := zapTestLogger(t)
-	updatedAnn := &repoAnn.Announcement{
-		ID:           "ann-004",
-		Name:         "Rated Ann",
-		Description:  "Desc4",
-		UserSellerID: "seller4",
-		Price:        120,
-		Category:     2,
-		Discount:     0,
-		IsActive:     true,
-		Rating:       4.5,
-		RatingCount:  2,
-		CreatedAt:    time.Now(),
-	}
-	repo := &fakeRepo{returnUpdateRatingAnn: updatedAnn, returnUpdateRatingErr: nil}
-	prod := &fakeProducer{}
-	handler := NewAnnouncementHandler(logger, repo, prod)
-
-	body, _ := json.Marshal(map[string]int{"rating": 5})
-	req := httptest.NewRequest(http.MethodPost, "/announcement/ann-004/rating", bytes.NewBuffer(body))
-	rr := httptest.NewRecorder()
-
-	r := mux.NewRouter()
-	r.HandleFunc("/announcement/{id}/rating", handler.UpdateRating).Methods(http.MethodPost)
-	r.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rr.Code)
-	}
-	if repo.lastUpdateRatingID != "ann-004" {
-		t.Errorf("expected UpdateRating called with id=\"ann-004\", got %q", repo.lastUpdateRatingID)
-	}
-	if repo.lastUpdateRatingValue != 5 {
-		t.Errorf("expected UpdateRating called with rate=5, got %d", repo.lastUpdateRatingValue)
-	}
-
-	var got repoAnn.Announcement
-	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
-		t.Fatalf("failed to unmarshal response: %v", err)
-	}
-	if got.ID != updatedAnn.ID || got.Rating != updatedAnn.Rating {
-		t.Errorf("unexpected announcement in response: %+v", got)
 	}
 }

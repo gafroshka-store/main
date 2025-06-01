@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"gafroshka-main/internal/contextutil"
 	"gafroshka-main/internal/kafka"
-	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 
 	"gafroshka-main/internal/announcement"
 	typesAnn "gafroshka-main/internal/types/announcement"
@@ -189,45 +190,4 @@ func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Logger.Infof("searched announcements with query: %s", q)
-}
-
-func (h *AnnouncementHandler) UpdateRating(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	if id == "" {
-		myErr.SendErrorTo(w, errors.New("missing announcement id"), http.StatusBadRequest, h.Logger)
-		return
-	}
-
-	var payload struct {
-		Rating int `json:"rating"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		myErr.SendErrorTo(w, errors.New("invalid JSON payload"), http.StatusBadRequest, h.Logger)
-		return
-	}
-
-	if payload.Rating < 1 || payload.Rating > 5 {
-		myErr.SendErrorTo(w, errors.New("rating must be between 1 and 5"), http.StatusBadRequest, h.Logger)
-		return
-	}
-
-	updated, err := h.AnnouncementRepo.UpdateRating(id, payload.Rating)
-	if err != nil {
-		if errors.Is(err, myErr.ErrNotFound) {
-			myErr.SendErrorTo(w, err, http.StatusNotFound, h.Logger)
-			return
-		}
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(updated); err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
-		return
-	}
-
-	h.Logger.Infof("updated rating for announcement %s", id)
 }

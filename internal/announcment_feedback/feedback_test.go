@@ -34,16 +34,19 @@ func TestCreateFeedback(t *testing.T) {
 		Rating:         5,
 	}
 
-	mock.ExpectExec(regexp.QuoteMeta(`
-		INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
-		VALUES ($1, $2, $3, $4, $5)
-	`)).
-		WithArgs(sqlmock.AnyArg(), // ID генерируется автоматически
+	// Исправлено: используем ExpectQuery и WillReturnRows для QueryRow().Scan()
+	mock.ExpectQuery(regexp.QuoteMeta(`
+        INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (announcement_recipient_id, user_writer_id) DO NOTHING
+        RETURNING id
+    `)).
+		WithArgs(sqlmock.AnyArg(),
 			testFeedback.AnnouncementID,
 			testFeedback.UserWriterID,
 			testFeedback.Comment,
 			testFeedback.Rating).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("id1"))
 
 	created, err := repo.Create(testFeedback)
 
@@ -51,10 +54,33 @@ func TestCreateFeedback(t *testing.T) {
 	assert.NotNil(t, created)
 	assert.NotEmpty(t, created.ID)
 
+	assert.Equal(t, "id1", created.ID)
 	assert.Equal(t, testFeedback.AnnouncementID, created.AnnouncementID)
 	assert.Equal(t, testFeedback.UserWriterID, created.UserWriterID)
 	assert.Equal(t, testFeedback.Comment, created.Comment)
 	assert.Equal(t, testFeedback.Rating, created.Rating)
+
+	// --- Новый тест: попытка повторного отзыва ---
+	t.Run("duplicate feedback not allowed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(`
+        INSERT INTO announcement_feedback (id, announcement_recipient_id, user_writer_id, comment, rating)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (announcement_recipient_id, user_writer_id) DO NOTHING
+        RETURNING id
+    `)).
+			WithArgs(sqlmock.AnyArg(), "1", "2", "Еще отзыв", 4).
+			WillReturnRows(sqlmock.NewRows([]string{"id"})) // пустые строки
+
+		dupFeedback := Feedback{
+			AnnouncementID: "1",
+			UserWriterID:   "2",
+			Comment:        "Еще отзыв",
+			Rating:         4,
+		}
+		_, err := repo.Create(dupFeedback)
+		assert.ErrorIs(t, err, errors.ErrAlreadyLeftFeedback)
+	})
+
 }
 
 func TestDeleteFeedback(t *testing.T) {

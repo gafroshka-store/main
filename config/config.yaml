@@ -6,7 +6,7 @@ db:
   host: db
 es:
   index: "announcements"
-etl_search_timeout: 1h
+etl_search_timeout: 1m
 max_open_conns: 10
 secret: mysuperpupermegaultraSecret
 srv_port: :8080

@@ -26,6 +26,7 @@ const (
 )
 
 func TestUserHandler_Login(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -109,7 +110,9 @@ func TestUserHandler_Login(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockBehavior()
 
 			var body io.Reader
@@ -132,6 +135,7 @@ func TestUserHandler_Login(t *testing.T) {
 }
 
 func TestUserHandler_Register(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -209,7 +213,9 @@ func TestUserHandler_Register(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockBehavior()
 
 			bodyBytes, _ := json.Marshal(tt.body) // nolint:errcheck
@@ -296,6 +302,7 @@ func TestUserHandler_Info(t *testing.T) {
 }
 
 func TestUserHandler_ChangeProfile(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -352,7 +359,9 @@ func TestUserHandler_ChangeProfile(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tt.mockBehavior()
 
 			var reqBody io.Reader
@@ -370,6 +379,180 @@ func TestUserHandler_ChangeProfile(t *testing.T) {
 			rr := httptest.NewRecorder()
 			r := mux.NewRouter()
 			r.HandleFunc("/users/{id}", handler.ChangeProfile).Methods("PUT")
+
+			r.ServeHTTP(rr, req)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestUserHandler_GetBalance(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockUserRepo(ctrl)
+	mockSessionRepo := mocks.NewMockSessionRepo(ctrl)
+	logger := zap.NewNop().Sugar()
+	handler := NewUserHandler(logger, mockRepo, mockSessionRepo)
+
+	tests := []struct {
+		name           string
+		userID         string
+		mockBehavior   func()
+		expectedStatus int
+	}{
+		{
+			name:   "Success",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
+			mockBehavior: func() {
+				mockRepo.EXPECT().
+					GetBalanceByUserID("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a").
+					Return(int64(1000), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Invalid ID",
+			userID:         "bad-id",
+			mockBehavior:   func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "User Not Found",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
+			mockBehavior: func() {
+				mockRepo.EXPECT().
+					GetBalanceByUserID("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a").
+					Return(int64(0), myErr.ErrNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:   "Internal Error",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
+			mockBehavior: func() {
+				mockRepo.EXPECT().
+					GetBalanceByUserID("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a").
+					Return(int64(0), errors.New("db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.mockBehavior()
+
+			req := httptest.NewRequest(http.MethodGet, "/users/"+tt.userID+"/balance", nil)
+			rr := httptest.NewRecorder()
+			r := mux.NewRouter()
+			r.HandleFunc("/users/{id}/balance", handler.GetBalance).Methods("GET")
+
+			r.ServeHTTP(rr, req)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestUserHandler_TopUpBalance(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockUserRepo(ctrl)
+	mockSessionRepo := mocks.NewMockSessionRepo(ctrl)
+	logger := zap.NewNop().Sugar()
+	handler := NewUserHandler(logger, mockRepo, mockSessionRepo)
+
+	tests := []struct {
+		name           string
+		userID         string
+		body           TopUpRequest
+		mockBehavior   func()
+		expectedStatus int
+	}{
+		{
+			name:   "Success",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
+			body:   TopUpRequest{Amount: 500},
+			mockBehavior: func() {
+				mockRepo.EXPECT().
+					TopUpBalance("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a", int64(500)).
+					Return(int64(1500), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Invalid ID",
+			userID:         "invalid-id",
+			body:           TopUpRequest{Amount: 500},
+			mockBehavior:   func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Invalid JSON",
+			userID:         "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
+			body:           TopUpRequest{},
+			mockBehavior:   func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Invalid Amount",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
+			body:   TopUpRequest{Amount: -100},
+			mockBehavior: func() {
+				mockRepo.EXPECT().
+					TopUpBalance("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a", int64(-100)).
+					Return(int64(0), myErr.ErrInvalidAmount)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "User Not Found",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
+			body:   TopUpRequest{Amount: 100},
+			mockBehavior: func() {
+				mockRepo.EXPECT().
+					TopUpBalance("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a", int64(100)).
+					Return(int64(0), myErr.ErrNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:   "Internal Error",
+			userID: "da19a8d6-4b6c-48a8-b888-fdc6b9deef4a",
+			body:   TopUpRequest{Amount: 100},
+			mockBehavior: func() {
+				mockRepo.EXPECT().
+					TopUpBalance("da19a8d6-4b6c-48a8-b888-fdc6b9deef4a", int64(100)).
+					Return(int64(0), errors.New("db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockBehavior()
+
+			var reqBody io.Reader
+			if tt.name == "Invalid JSON" {
+				reqBody = strings.NewReader("{invalid-json}")
+			} else {
+				bodyBytes, _ := json.Marshal(tt.body)
+				reqBody = bytes.NewReader(bodyBytes)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/users/"+tt.userID+"/balance/topup", reqBody)
+			req.Header.Set("Content-Type", "application/json")
+
+			rr := httptest.NewRecorder()
+			r := mux.NewRouter()
+			r.HandleFunc("/users/{id}/balance/topup", handler.TopUpBalance).Methods("POST")
 
 			r.ServeHTTP(rr, req)
 			assert.Equal(t, tt.expectedStatus, rr.Code)

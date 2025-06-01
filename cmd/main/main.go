@@ -5,17 +5,20 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
+
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	elastic "gafroshka-main/internal/elastic_search"
 	"gafroshka-main/internal/etl"
-	handlersAnnouncement "gafroshka-main/internal/handlers/announcement"
+	userAnnHandlers "gafroshka-main/internal/handlers/announcement"
 	handlersAnnFeedback "gafroshka-main/internal/handlers/announcement_feedback"
+	handlersCart "gafroshka-main/internal/handlers/shopping_cart"
 	handlersUser "gafroshka-main/internal/handlers/user"
 	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
 	"gafroshka-main/internal/kafka"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
+	cart "gafroshka-main/internal/shopping_cart"
 	"gafroshka-main/internal/user"
 	userFeedback "gafroshka-main/internal/user_feedback"
 	"net/http"
@@ -47,6 +50,8 @@ func main() {
 
 	logger := zapLogger.Sugar()
 
+	// тк функция откладывается буду использовать
+	// обертку в анонимную функцию
 	defer func() {
 		err = zapLogger.Sync()
 		if err != nil {
@@ -54,7 +59,7 @@ func main() {
 		}
 	}()
 
-	// parse config
+	// парсим конфиг
 	c, err := app.NewConfig(cfgPath)
 	if err != nil {
 		logger.Fatalf("error to parsing config: %v", err)
@@ -82,7 +87,7 @@ func main() {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     RedisAddr,
 		Password: "",
-		DB:       0,
+		DB:       0, // стандартная БД
 	})
 
 	// init ES
@@ -102,25 +107,30 @@ func main() {
 
 	elasticService := elastic.NewService(elasticClient, logger, c.CfgES.Index)
 
+	if err = elasticService.EnsureIndex(context.Background()); err != nil {
+		logger.Errorf("failed to ensure index: %v", err)
+	}
+
 	// init and start ETL
 	extractor := etl.NewPostgresExtractor(db, logger)
 	transformer := etl.NewTransformer(logger)
-	loader := etl.NewElasticLoader(elasticService, logger)
+	loader := etl.NewElasticLoader(elasticService, logger, db)
 
 	pipeline := etl.NewPipeline(extractor, transformer, loader, logger, c.ETLTimeout)
+
 	go pipeline.Run(context.Background())
 
 	// init repository
 	userRepository := user.NewUserDBRepository(db, logger)
+	announcementRepository := announcement.NewAnnouncementDBRepository(db, logger, elasticService)
 	sessionRepository := session.NewSessionRepository(redisClient, logger, c.Secret, c.SessionDuration)
 	userFeedbackRepository := userFeedback.NewUserFeedbackRepository(db, logger)
-	announcementRepository := announcement.NewAnnouncementDBRepository(db, logger)
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
+	shoppingCartRepository := cart.NewShoppingCartRepository(db, logger)
 
 	// init Kafka Producer для отправки событий
 	kafkaProducer := kafka.NewProducer([]string{KafkaBrokers}, KafkaTopic, logger)
 	defer kafkaProducer.Close()
-
 	// init router
 	r := mux.NewRouter()
 
@@ -128,38 +138,45 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-	announcementHandlers := handlersAnnouncement.NewAnnouncementHandler(logger, announcementRepository, kafkaProducer)
+	annHandlers := userAnnHandlers.NewAnnouncementHandler(logger, announcementRepository, kafkaProducer)
+	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository, userRepository)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
 	authRouter.Use(middleware.Auth(sessionRepository))
 
-	authRouter.HandleFunc("/feedback", annFeedbackHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/feedback/{id}", annFeedbackHandlers.Delete).Methods("DELETE")
+	authRouter.HandleFunc("/announcement/feedback", annFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/announcement/feedback/{id}", annFeedbackHandlers.Delete).Methods("DELETE")
+	authRouter.HandleFunc("/announcement/feedback/{id}", annFeedbackHandlers.Update).Methods("PATCH")
 
 	authRouter.HandleFunc("/user/{id}", userHandlers.ChangeProfile).Methods("PUT")
+	authRouter.HandleFunc("/user/{id}/balance/topup", userHandlers.TopUpBalance).Methods("POST")
 
-	authRouter.HandleFunc("/feedback", userFeedbackHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
-	authRouter.HandleFunc("/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
+	authRouter.HandleFunc("/user/feedback", userFeedbackHandlers.Create).Methods("POST")
+	authRouter.HandleFunc("/user/feedback/{id}", userFeedbackHandlers.Update).Methods("PUT")
+	authRouter.HandleFunc("/user/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
 
-	authRouter.HandleFunc("/announcement", announcementHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/announcement/{id}/rating", announcementHandlers.UpdateRating).Methods("POST")
+	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
 
-	// Ручки НЕ требующие авторизации
+	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST")
+	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.DeleteFromShoppingCart).Methods("DELETE")
+	authRouter.HandleFunc("/cart/{userID}", shoppingCartHandlers.GetCart).Methods("GET")
+	authRouter.HandleFunc("/cart/{userID}/purchase", shoppingCartHandlers.PurchaseFromCart).Methods("POST")
+
+	// Ручки НЕ требующие авторизации`
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
 
 	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
 	noAuthRouter.HandleFunc("/user/register", userHandlers.Register).Methods("POST")
 	noAuthRouter.HandleFunc("/user/login", userHandlers.Login).Methods("POST")
+	noAuthRouter.HandleFunc("/user/{id}/balance", userHandlers.GetBalance).Methods("GET")
 
-	noAuthRouter.HandleFunc("/feedback/user/{user_id}", userFeedbackHandlers.GetByUserID).Methods("GET")
+	noAuthRouter.HandleFunc("/user/feedback/user/{id}", userFeedbackHandlers.GetByUserID).Methods("GET")
+	noAuthRouter.HandleFunc("/announcement/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
 
-	noAuthRouter.HandleFunc("/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
-
-	noAuthRouter.HandleFunc("/announcement/{id}", announcementHandlers.GetByID).Methods("GET")
-	noAuthRouter.HandleFunc("/announcements/top", announcementHandlers.GetTopN).Methods("POST")
-	noAuthRouter.HandleFunc("/announcements/search", announcementHandlers.Search).Methods("GET")
+	noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
+	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")
+	noAuthRouter.HandleFunc("/announcements/search", annHandlers.Search).Methods("GET")
 
 	logger.Infow("starting server",
 		"type", "START",
@@ -174,7 +191,8 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	if err := srv.ListenAndServe(); err != nil {
+	err = srv.ListenAndServe()
+	if err != nil {
 		panic("can't start server: " + err.Error())
 	}
 }
