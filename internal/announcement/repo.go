@@ -235,69 +235,6 @@ func (ar *AnnouncementDBRepository) GetByID(id string) (*Announcement, error) {
 	return &a, nil
 }
 
-func (ar *AnnouncementDBRepository) UpdateRating(id string, rate int) (*Announcement, error) {
-	tx, err := ar.DB.Begin()
-	if err != nil {
-		return nil, errors.ErrDBInternal
-	}
-	defer tx.Rollback() // nolint:errcheck
-
-	var currentRating float64
-	var ratingCount int
-
-	err = tx.QueryRow(
-		"SELECT rating, rating_count FROM announcement WHERE id = $1 FOR UPDATE",
-		id,
-	).Scan(&currentRating, &ratingCount)
-
-	if err != nil {
-		return nil, errors.ErrDBInternal
-	}
-
-	newRating := float64(rate)
-	if ratingCount > 0 {
-		newRating = (currentRating + float64(rate)) / 2
-	}
-
-	_, err = tx.Exec(
-		"UPDATE announcement SET rating = $1, rating_count = rating_count + 1 WHERE id = $2",
-		newRating,
-		id,
-	)
-
-	if err != nil {
-		return nil, errors.ErrDBInternal
-	}
-
-	var updated Announcement
-	err = tx.QueryRow(`
-		SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
-		FROM announcement 
-		WHERE id = $1
-	`, id).Scan(
-		&updated.ID,
-		&updated.Name,
-		&updated.Description,
-		&updated.UserSellerID,
-		&updated.Price,
-		&updated.Category,
-		&updated.Discount,
-		&updated.IsActive,
-		&updated.Rating,
-		&updated.RatingCount,
-		&updated.CreatedAt,
-	)
-	if err != nil {
-		return nil, errors.ErrDBInternal
-	}
-
-	if err = tx.Commit(); err != nil {
-		return nil, errors.ErrDBInternal
-	}
-
-	return &updated, nil
-}
-
 func (ar *AnnouncementDBRepository) GetInfoForShoppingCart(ids []string) ([]types.InfoForSC, error) {
 	if len(ids) == 0 {
 		// Если нет id, сразу возвращаем пустой слайс

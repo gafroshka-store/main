@@ -27,6 +27,5 @@ type AnnouncementRepo interface {
 	GetTopN(limit int) ([]Announcement, error)
 	Search(query string) ([]Announcement, error)
 	GetByID(id string) (*Announcement, error)
-	UpdateRating(id string, rate int) (*Announcement, error)
 	GetInfoForShoppingCart(ids []string) ([]types.InfoForSC, error)
 }
