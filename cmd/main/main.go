@@ -135,7 +135,6 @@ func main() {
 	annHandlers := userAnnHandlers.NewAnnouncementHandler(logger, announcementRepository)
 	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository, userRepository)
 
-
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
 	authRouter.Use(middleware.Auth(sessionRepository))
@@ -158,7 +157,7 @@ func main() {
 	authRouter.HandleFunc("/cart/{userID}", shoppingCartHandlers.GetCart).Methods("GET")
 	authRouter.HandleFunc("/cart/{userID}/purchase", shoppingCartHandlers.PurchaseFromCart).Methods("POST")
 
-	// Ручки НЕ требующие авторизации
+	// Ручки НЕ требующие авторизации`
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
 
 	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
