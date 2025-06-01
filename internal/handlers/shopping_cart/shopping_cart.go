@@ -157,18 +157,30 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	// Декодируем список ID объявлений из тела запроса
 	var requestedIDs []string
 	if err := json.NewDecoder(r.Body).Decode(&requestedIDs); err != nil {
-		myErr.SendErrorTo(w, err, http.StatusBadRequest, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "invalid request body",
+		})
 		return
 	}
 	if len(requestedIDs) == 0 {
-		myErr.SendErrorTo(w, errors.New("empty announcement list"), http.StatusBadRequest, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "empty announcement list",
+		})
 		return
 	}
 
 	// Получаем текущую корзину пользователя
 	cartIDs, err := h.CartRepo.GetByUserID(userID)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "failed to get cart",
+		})
 		return
 	}
 
@@ -179,7 +191,11 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	}
 	for _, reqID := range requestedIDs {
 		if !validItems[reqID] {
-			myErr.SendErrorTo(w, errors.New("one or more items not in cart"), http.StatusBadRequest, h.Logger)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": "one or more items not in cart",
+			})
 			return
 		}
 	}
@@ -187,7 +203,11 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	// Получаем информацию о товарах для расчета суммы
 	infos, err := h.AnnouncementRepo.GetInfoForShoppingCart(requestedIDs)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "failed to get announcement info",
+		})
 		return
 	}
 
@@ -200,19 +220,31 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	// Получаем баланс пользователя
 	balance, err := h.UserRepo.GetBalanceByUserID(userID)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "failed to get user balance",
+		})
 		return
 	}
 
 	if balance < total {
-		myErr.SendErrorTo(w, errors.New("insufficient funds"), http.StatusPaymentRequired, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusPaymentRequired)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "insufficient funds",
+		})
 		return
 	}
 
 	// Списываем деньги у пользователя
 	_, err = h.UserRepo.TopUpBalance(userID, -total)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "failed to charge user",
+		})
 		return
 	}
 
@@ -227,6 +259,7 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 
 	// Отправляем подтверждение
 	h.Logger.Infof("user %s purchased items %v for total %d", userID, requestedIDs, total)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "success",
