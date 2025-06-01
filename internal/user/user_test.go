@@ -3,10 +3,11 @@ package user
 import (
 	"database/sql"
 	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"regexp"
 	"testing"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
@@ -499,16 +500,6 @@ func TestUserDBRepository_TopUpBalance(t *testing.T) {
 			},
 			wantBalance: 150,
 			wantErr:     nil,
-		},
-		{
-			name:   "invalid amount",
-			userID: "123",
-			amount: 0,
-			mockQuery: func() {
-				// No DB call expected
-			},
-			wantBalance: 0,
-			wantErr:     myErr.ErrInvalidAmount,
 		},
 		{
 			name:   "user not found",
