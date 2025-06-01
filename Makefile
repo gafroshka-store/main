@@ -17,4 +17,8 @@ lint:
 	golangci-lint run --config .golangci.yml
 
 tests:
-	go test -v -cover ./...
+	go test -v -cover -count=1 ./...
+
+# проверяет на сборку приложение и удаляет бинарь
+build:
+	go build ./cmd/main/main.go && rm -r main

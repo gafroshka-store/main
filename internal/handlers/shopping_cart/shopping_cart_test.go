@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,7 +25,7 @@ func TestShoppingCartHandler_AddToShoppingCart(t *testing.T) {
 	mockCartRepo := mocks.NewMockShoppingCardRepo(ctrl)
 	mockAnnRepo := mocks.NewMockAnnouncementRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := NewShoppingCartHandler(logger, mockCartRepo, mockAnnRepo)
+	handler := NewShoppingCartHandler(logger, mockCartRepo, mockAnnRepo, nil)
 
 	validUserID := uuid.New().String()
 	validAnnID := uuid.New().String()
@@ -93,7 +94,7 @@ func TestShoppingCartHandler_DeleteFromShoppingCart(t *testing.T) {
 	mockCartRepo := mocks.NewMockShoppingCartRepo(ctrl)
 	mockAnnRepo := mocks.NewMockAnnouncementRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := NewShoppingCartHandler(logger, mockCartRepo, mockAnnRepo)
+	handler := NewShoppingCartHandler(logger, mockCartRepo, mockAnnRepo, nil)
 
 	validUserID := uuid.New().String()
 	validAnnID := uuid.New().String()
@@ -164,7 +165,7 @@ func TestShoppingCartHandler_GetCart(t *testing.T) {
 	mockCartRepo := mocks.NewMockShoppingCartRepo(ctrl)
 	mockAnnRepo := mocks.NewMockAnnouncementRepo(ctrl)
 	logger := zaptest.NewLogger(t).Sugar()
-	handler := NewShoppingCartHandler(logger, mockCartRepo, mockAnnRepo)
+	handler := NewShoppingCartHandler(logger, mockCartRepo, mockAnnRepo, nil)
 
 	validUserID := uuid.New().String()
 	announcementIDs := []string{uuid.New().String(), uuid.New().String()}
@@ -234,6 +235,117 @@ func TestShoppingCartHandler_GetCart(t *testing.T) {
 				}
 				if len(got) != len(infos) {
 					t.Errorf("expected %d items, got %d", len(infos), len(got))
+				}
+			}
+		})
+	}
+}
+
+func TestShoppingCartHandler_PurchaseFromCart(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockCartRepo := mocks.NewMockShoppingCartRepo(ctrl)
+	mockAnnRepo := mocks.NewMockAnnouncementRepo(ctrl)
+	mockUserRepo := mocks.NewMockUserRepo(ctrl)
+	logger := zaptest.NewLogger(t).Sugar()
+
+	handler := NewShoppingCartHandler(logger, mockCartRepo, mockAnnRepo, mockUserRepo)
+
+	validUserID := uuid.New().String()
+	itemID1 := uuid.New().String()
+	itemID2 := uuid.New().String()
+
+	requestedIDs := []string{itemID1, itemID2}
+	cartItems := []string{itemID1, itemID2, uuid.New().String()}
+	infos := []typesAnn.InfoForSC{
+		{ID: itemID1, Price: 1000},
+		{ID: itemID2, Price: 2000},
+	}
+	total := int64(3000)
+
+	tests := []struct {
+		name           string
+		userID         string
+		requestedIDs   []string
+		mockBehavior   func()
+		expectedStatus int
+	}{
+		{
+			name:         "success",
+			userID:       validUserID,
+			requestedIDs: requestedIDs,
+			mockBehavior: func() {
+				mockCartRepo.EXPECT().GetByUserID(validUserID).Return(cartItems, nil)
+				mockAnnRepo.EXPECT().GetInfoForShoppingCart(requestedIDs).Return(infos, nil)
+				mockUserRepo.EXPECT().GetBalanceByUserID(validUserID).Return(int64(5000), nil)
+				mockUserRepo.EXPECT().TopUpBalance(validUserID, -total).Return(int64(2000), nil)
+				mockCartRepo.EXPECT().DeleteAnnouncement(validUserID, itemID1).Return(nil)
+				mockCartRepo.EXPECT().DeleteAnnouncement(validUserID, itemID2).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "invalid UUID",
+			userID:         "bad-id",
+			requestedIDs:   requestedIDs,
+			mockBehavior:   func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:         "item not in cart",
+			userID:       validUserID,
+			requestedIDs: []string{uuid.New().String()},
+			mockBehavior: func() {
+				mockCartRepo.EXPECT().GetByUserID(validUserID).Return(cartItems, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:         "insufficient funds",
+			userID:       validUserID,
+			requestedIDs: requestedIDs,
+			mockBehavior: func() {
+				mockCartRepo.EXPECT().GetByUserID(validUserID).Return(cartItems, nil)
+				mockAnnRepo.EXPECT().GetInfoForShoppingCart(requestedIDs).Return(infos, nil)
+				mockUserRepo.EXPECT().GetBalanceByUserID(validUserID).Return(int64(1000), nil)
+			},
+			expectedStatus: http.StatusPaymentRequired,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.mockBehavior()
+
+			body, _ := json.Marshal(tc.requestedIDs)
+			url := fmt.Sprintf("/cart/%s/purchase", tc.userID)
+			req := httptest.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+			req = mux.SetURLVars(req, map[string]string{
+				"userID": tc.userID,
+			})
+			w := httptest.NewRecorder()
+
+			handler.PurchaseFromCart(w, req)
+
+			resp := w.Result()
+			if resp.StatusCode != tc.expectedStatus {
+				t.Errorf("expected status %d, got %d", tc.expectedStatus, resp.StatusCode)
+			}
+
+			if tc.expectedStatus == http.StatusOK {
+				var respBody map[string]interface{}
+				if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+					t.Errorf("failed to decode response body: %v", err)
+				}
+				if respBody["status"] != "success" {
+					t.Errorf("expected success status, got %v", respBody["status"])
+				}
+				if int64(respBody["total"].(float64)) != total {
+					t.Errorf("expected total %d, got %v", total, respBody["total"])
 				}
 			}
 		})
