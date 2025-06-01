@@ -151,7 +151,6 @@ func main() {
 	authRouter.HandleFunc("/user/feedback/{id}", userFeedbackHandlers.Delete).Methods("DELETE")
 
 	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
-	authRouter.HandleFunc("/announcement/{id}/rating", annHandlers.UpdateRating).Methods("POST")
 
 	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST")
 	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.DeleteFromShoppingCart).Methods("DELETE")
