@@ -24,7 +24,7 @@ type Announcement struct {
 //go:generate mockgen -source=announcement.go -destination=../mocks/mock_announcement_repo.go -package=mocks
 type AnnouncementRepo interface {
 	Create(a types.CreateAnnouncement) (*Announcement, error)
-	GetTopN(limit int) ([]Announcement, error)
+	GetTopN(limit int, categories []int) ([]Announcement, error)
 	Search(query string) ([]Announcement, error)
 	GetByID(id string) (*Announcement, error)
 	GetInfoForShoppingCart(ids []string) ([]types.InfoForSC, error)

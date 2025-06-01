@@ -6,11 +6,12 @@ import (
 	"fmt"
 	myErr "gafroshka-main/internal/types/errors"
 	types "gafroshka-main/internal/types/user"
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	"go.uber.org/zap"
 )
@@ -235,10 +236,6 @@ func (ur *UserDBRepository) GetBalanceByUserID(userID string) (int64, error) {
 
 // TopUpBalance пополняет баланс пользователя на amount и возвращает баланс новый
 func (ur *UserDBRepository) TopUpBalance(userID string, amount int64) (int64, error) {
-	if amount <= 0 {
-		return 0, myErr.ErrInvalidAmount
-	}
-
 	query := `
 		UPDATE users
 		SET balance = balance + $1

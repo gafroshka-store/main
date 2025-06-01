@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"net/http"
-	"strings"
-	"time"
 
 	errorspkg "gafroshka-main/internal/types/errors"
 )

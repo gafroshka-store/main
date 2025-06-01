@@ -25,7 +25,8 @@ func NewShoppingCartRepository(db *sql.DB, logger *zap.SugaredLogger) *ShoppingC
 func (scr *ShoppingCartRepository) AddAnnouncement(userID string, announcementID string) error {
 	query := `
 	INSERT INTO shopping_cart(user_id, announcement_id) 
-	VALUES ($1, $2)
+	VALUES ($1, $2) ON CONFLICT (user_id, announcement_id)
+	DO NOTHING
 `
 	_, err := scr.DB.Exec(query, userID, announcementID)
 	if err != nil {

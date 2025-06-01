@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"net/http"
-	"runtime"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -42,55 +42,18 @@ var (
 		[]string{"method", "path", "status"},
 	)
 
-	goGoroutines = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "go_goroutines",
-			Help: "Number of goroutines",
-		},
-	)
-
-	goMemStatsHeapAlloc = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "go_memstats_heap_alloc_bytes",
-			Help: "Number of heap bytes allocated and still in use",
-		},
-	)
-
-	goMemStatsStackInuse = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "go_memstats_stack_inuse_bytes",
-			Help: "Bytes in stack spans in use",
-		},
-	)
+	registerMetricsOnce sync.Once
 )
 
 func init() {
-	prometheus.MustRegister(
-		httpRequestsTotal,
-		httpRequestDuration,
-		httpInFlightRequests,
-		httpErrorsTotal,
-		goGoroutines,
-		goMemStatsHeapAlloc,
-		goMemStatsStackInuse,
-	)
-
-	// Запускаем сборку метрик runtime в фоне
-	go collectGoRuntimeMetrics()
-}
-
-// Функция для периодического обновления метрик runtime
-func collectGoRuntimeMetrics() {
-	for {
-		var m runtime.MemStats
-		runtime.ReadMemStats(&m)
-
-		goGoroutines.Set(float64(runtime.NumGoroutine()))
-		goMemStatsHeapAlloc.Set(float64(m.HeapAlloc))
-		goMemStatsStackInuse.Set(float64(m.StackInuse))
-
-		time.Sleep(10 * time.Second)
-	}
+	registerMetricsOnce.Do(func() {
+		prometheus.MustRegister(
+			httpRequestsTotal,
+			httpRequestDuration,
+			httpInFlightRequests,
+			httpErrorsTotal,
+		)
+	})
 }
 
 func MetricsMiddleware(next http.Handler) http.Handler {

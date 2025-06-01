@@ -13,8 +13,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-#      elasticsearch:
-#        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   db:
     image: postgres:17
@@ -28,7 +30,7 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d store"]
       interval: 5s
@@ -67,10 +69,7 @@ services:
     volumes:
       - esdata:/usr/share/elasticsearch/data
     healthcheck:
-      test: [
-        "CMD-SHELL",
-        "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'"
-      ]
+      test: [ "CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'" ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -96,6 +95,76 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     networks:
       - shared-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    networks:
+      - shared-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - shared-network
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfile_analytics
+    ports:
+      - "8082:8082"
+    networks:
+      - shared-network
+    depends_on:
+      kafka:
+        condition: service_started
+      db-analytics:
+        condition: service_started
+    environment:
+      - CONFIG_PATH=./config/analytics-config.yaml
+
+  db-analytics:
+    image: postgres:17
+    container_name: db-analytics
+    environment:
+      POSTGRES_DB: analytics
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: love
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_analytics_data:/var/lib/postgresql/data
+      - ./db/analytics_init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - shared-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:80"
+    networks:
+      - shared-network
+    depends_on:
+      - app
 
   prometheus:
     image: prom/prometheus
@@ -129,6 +198,7 @@ volumes:
   db_data:
   redis_data:
   esdata:
+  db_analytics_data:
   grafana-storage:
 
 networks:
