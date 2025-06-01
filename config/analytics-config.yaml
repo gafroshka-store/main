@@ -1,0 +1,9 @@
+# Minimal analytics config placeholder
+db:
+  login: postgres
+  password: love
+  port: 5434
+  database: analytics
+  host: localhost
+max_open_conns: 10
+
