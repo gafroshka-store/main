@@ -1,8 +1,0 @@
-db:
-  host: db-analytics
-  port: 5433
-  login: postgres
-  password: love
-  database: analytics
-
-max_open_conns: 10

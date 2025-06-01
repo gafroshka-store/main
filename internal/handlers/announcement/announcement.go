@@ -105,7 +105,8 @@ func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Limit int `json:"limit"`
+		UserID string `json:"user_id"`
+		Limit  int    `json:"limit"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -119,9 +120,9 @@ func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var categories []int
-	if userID, ok := contextutil.GetUserIDFromContext(r.Context()); ok {
+	if input.UserID != "" {
 		// Запрос к сервису аналитики
-		url := fmt.Sprintf("http://analytics-service:8082/user/%s/preferences?top=%d", userID, input.Limit)
+		url := fmt.Sprintf("http://localhost:8082/user/%s/preferences?top=%d", input.UserID, input.Limit)
 		resp, err := http.Get(url)
 		if err == nil {
 			defer resp.Body.Close()
@@ -148,7 +149,7 @@ func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Logger.Infof("fetched top %d announcements for categories %v", input.Limit, categories)
+	h.Logger.Infof("fetched top %d announcements for user %s, categories %v", input.Limit, input.UserID, categories)
 }
 
 func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
