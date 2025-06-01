@@ -25,8 +25,8 @@ import (
 // Вспомогательные «фейковые» реализации
 // ----------------------------
 
-// fakeRepo реализует интерфейс repoAnn.AnnouncementRepo.
-type fakeRepo struct {
+// fakeAnnRepo реализует интерфейс repoAnn.AnnouncementRepo.
+type fakeAnnRepo struct {
 	// Для Create
 	lastCreateInput typesAnn.CreateAnnouncement
 	returnCreateAnn *repoAnn.Announcement
@@ -49,33 +49,33 @@ type fakeRepo struct {
 	returnSearchErr  error
 }
 
-func (f *fakeRepo) Create(a typesAnn.CreateAnnouncement) (*repoAnn.Announcement, error) {
+func (f *fakeAnnRepo) Create(a typesAnn.CreateAnnouncement) (*repoAnn.Announcement, error) {
 	f.lastCreateInput = a
 	return f.returnCreateAnn, f.returnCreateErr
 }
 
-func (f *fakeRepo) GetByID(id string) (*repoAnn.Announcement, error) {
+func (f *fakeAnnRepo) GetByID(id string) (*repoAnn.Announcement, error) {
 	f.lastGetByIDInput = id
 	return f.returnGetByIDAnn, f.returnGetByIDErr
 }
 
-func (f *fakeRepo) GetTopN(limit int, categories []int) ([]repoAnn.Announcement, error) {
+func (f *fakeAnnRepo) GetTopN(limit int, categories []int) ([]repoAnn.Announcement, error) {
 	f.lastGetTopNLimit = limit
 	f.lastGetTopNCategories = append([]int(nil), categories...)
 	return f.returnGetTopNAnns, f.returnGetTopNErr
 }
 
-func (f *fakeRepo) Search(query string) ([]repoAnn.Announcement, error) {
+func (f *fakeAnnRepo) Search(query string) ([]repoAnn.Announcement, error) {
 	f.lastSearchQuery = query
 	return f.returnSearchAnns, f.returnSearchErr
 }
 
-// Add stub for GetInfoForShoppingCart to satisfy AnnouncementRepo interface.
-func (f *fakeRepo) GetInfoForShoppingCart(ids []string) ([]typesAnn.InfoForSC, error) {
+// Add stub для GetInfoForShoppingCart, чтобы интерфейс был полностью удовлетворён.
+func (f *fakeAnnRepo) GetInfoForShoppingCart(ids []string) ([]typesAnn.InfoForSC, error) {
 	return nil, nil
 }
 
-// fakeProducer реализует интерфейс kafka.EventProducer
+// fakeProducer реализует интерфейс kafka.EventProducer.
 type fakeProducer struct {
 	calledEvents []kafka.Event
 	returnError  error
@@ -90,7 +90,7 @@ func (f *fakeProducer) Close() error {
 	return nil
 }
 
-// zapTestLogger создаёт «тихий» SugaredLogger для тестов
+// zapTestLogger создаёт «тихий» SugaredLogger для тестов.
 func zapTestLogger(t *testing.T) *zap.SugaredLogger {
 	t.Helper()
 	logger, err := zap.NewDevelopmentConfig().Build(zap.AddCallerSkip(1))
@@ -106,7 +106,7 @@ func zapTestLogger(t *testing.T) *zap.SugaredLogger {
 
 func TestCreate_InvalidJSON(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{}
+	repo := &fakeAnnRepo{}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -120,9 +120,10 @@ func TestCreate_InvalidJSON(t *testing.T) {
 	}
 }
 
+// Репозиторий упал — в ответе 500 и события не посылаются
 func TestCreate_RepoError(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{returnCreateErr: errors.New("db failure")}
+	repo := &fakeAnnRepo{returnCreateErr: errors.New("db failure")}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -148,7 +149,8 @@ func TestCreate_RepoError(t *testing.T) {
 	}
 }
 
-func TestCreate_Success_NoUserInContext(t *testing.T) {
+// Успешное создание — возвращается 201, события не шлются ни при каком user
+func TestCreate_Success_NoEvents(t *testing.T) {
 	logger := zapTestLogger(t)
 	returnAnn := &repoAnn.Announcement{
 		ID:           "ann-123",
@@ -163,7 +165,7 @@ func TestCreate_Success_NoUserInContext(t *testing.T) {
 		RatingCount:  0,
 		CreatedAt:    time.Now(),
 	}
-	repo := &fakeRepo{returnCreateAnn: returnAnn, returnCreateErr: nil}
+	repo := &fakeAnnRepo{returnCreateAnn: returnAnn, returnCreateErr: nil}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -178,6 +180,11 @@ func TestCreate_Success_NoUserInContext(t *testing.T) {
 	body, _ := json.Marshal(input)
 	req := httptest.NewRequest(http.MethodPost, "/announcement", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
+
+	// даже если положить в контекст session — Create НЕ шлёт никаких событий.
+	sess := &session.Session{UserID: "some-user"}
+	ctxWithSess := middleware.ContextWithSession(req.Context(), sess)
+	req = req.WithContext(ctxWithSess)
 
 	handler.Create(rr, req)
 
@@ -200,71 +207,17 @@ func TestCreate_Success_NoUserInContext(t *testing.T) {
 	}
 }
 
-func TestCreate_Success_WithUserInContext(t *testing.T) {
-	logger := zapTestLogger(t)
-	returnAnn := &repoAnn.Announcement{
-		ID:           "ann-456",
-		Name:         "Another Ann",
-		Description:  "Desc2",
-		UserSellerID: "user-2",
-		Price:        300,
-		Category:     7,
-		Discount:     5,
-		IsActive:     true,
-		Rating:       1.0,
-		RatingCount:  1,
-		CreatedAt:    time.Now(),
-	}
-	repo := &fakeRepo{returnCreateAnn: returnAnn, returnCreateErr: nil}
-	prod := &fakeProducer{returnError: nil}
-	handler := NewAnnouncementHandler(logger, repo, prod)
-
-	input := typesAnn.CreateAnnouncement{
-		Name:         returnAnn.Name,
-		Description:  returnAnn.Description,
-		UserSellerID: returnAnn.UserSellerID,
-		Price:        returnAnn.Price,
-		Category:     returnAnn.Category,
-		Discount:     returnAnn.Discount,
-	}
-	body, _ := json.Marshal(input)
-	req := httptest.NewRequest(http.MethodPost, "/announcement", bytes.NewBuffer(body))
-	rr := httptest.NewRecorder()
-
-	sess := &session.Session{UserID: "user-2"}
-	ctxWithSess := middleware.ContextWithSession(req.Context(), sess)
-	req = req.WithContext(ctxWithSess)
-
-	handler.Create(rr, req)
-
-	if rr.Code != http.StatusCreated {
-		t.Fatalf("expected status 201, got %d", rr.Code)
-	}
-	if len(prod.calledEvents) != 1 {
-		t.Fatalf("expected SendEvent to be called once, but was called %d times", len(prod.calledEvents))
-	}
-	sent := prod.calledEvents[0]
-	if sent.UserID != "user-2" {
-		t.Errorf("expected event.UserID = \"user-2\", got %q", sent.UserID)
-	}
-	if sent.Type != kafka.EventTypeView {
-		t.Errorf("expected event.Type = view, got %q", sent.Type)
-	}
-	if len(sent.Categories) != 1 || sent.Categories[0] != returnAnn.Category {
-		t.Errorf("expected event.Categories = [%d], got %v", returnAnn.Category, sent.Categories)
-	}
-}
-
 // ----------------------------
 // Тесты для метода GetByID
 // ----------------------------
 
 func TestGetByID_MissingID(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{}
+	repo := &fakeAnnRepo{}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
+	// если URL без id ("/announcement//"), mux сам отбрасывает на 301 Redirect
 	req := httptest.NewRequest(http.MethodGet, "/announcement//", nil)
 	rr := httptest.NewRecorder()
 
@@ -272,14 +225,15 @@ func TestGetByID_MissingID(t *testing.T) {
 	r.HandleFunc("/announcement/{id}", handler.GetByID).Methods(http.MethodGet)
 	r.ServeHTTP(rr, req)
 
+	// ожидали, что без id вернём 400; но на уровне mux идёт перенаправление (301)
 	if rr.Code != http.StatusMovedPermanently {
-		t.Errorf("expected status 400, got %d", rr.Code)
+		t.Errorf("expected status 301 (redirect), got %d", rr.Code)
 	}
 }
 
 func TestGetByID_NotFound(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{returnGetByIDErr: myErr.ErrNotFound}
+	repo := &fakeAnnRepo{returnGetByIDErr: myErr.ErrNotFound}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -300,7 +254,7 @@ func TestGetByID_NotFound(t *testing.T) {
 
 func TestGetByID_RepoError(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{returnGetByIDErr: errors.New("db fail")}
+	repo := &fakeAnnRepo{returnGetByIDErr: errors.New("db fail")}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -316,7 +270,7 @@ func TestGetByID_RepoError(t *testing.T) {
 	}
 }
 
-func TestGetByID_Success(t *testing.T) {
+func TestGetByID_Success_NoUser(t *testing.T) {
 	logger := zapTestLogger(t)
 	expectedAnn := &repoAnn.Announcement{
 		ID:           "ann-789",
@@ -331,7 +285,7 @@ func TestGetByID_Success(t *testing.T) {
 		RatingCount:  4,
 		CreatedAt:    time.Now(),
 	}
-	repo := &fakeRepo{returnGetByIDAnn: expectedAnn, returnGetByIDErr: nil}
+	repo := &fakeAnnRepo{returnGetByIDAnn: expectedAnn, returnGetByIDErr: nil}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -358,13 +312,60 @@ func TestGetByID_Success(t *testing.T) {
 	}
 }
 
+func TestGetByID_Success_WithUserParam(t *testing.T) {
+	logger := zapTestLogger(t)
+	expectedAnn := &repoAnn.Announcement{
+		ID:           "ann-000",
+		Name:         "Found Ann 2",
+		Description:  "Desc4",
+		UserSellerID: "seller-2",
+		Price:        180,
+		Category:     7,
+		Discount:     5,
+		IsActive:     true,
+		Rating:       1.2,
+		RatingCount:  2,
+		CreatedAt:    time.Now(),
+	}
+	repo := &fakeAnnRepo{returnGetByIDAnn: expectedAnn, returnGetByIDErr: nil}
+	prod := &fakeProducer{returnError: nil}
+	handler := NewAnnouncementHandler(logger, repo, prod)
+
+	// передаём ?user_id=user-42
+	req := httptest.NewRequest(http.MethodGet, "/announcement/ann-000?user_id=user-42", nil)
+	rr := httptest.NewRecorder()
+
+	r := mux.NewRouter()
+	r.HandleFunc("/announcement/{id}", handler.GetByID).Methods(http.MethodGet)
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+
+	// Событие должно было отослаться ровно один раз
+	if len(prod.calledEvents) != 1 {
+		t.Fatalf("expected SendEvent to be called once, but was called %d times", len(prod.calledEvents))
+	}
+	sent := prod.calledEvents[0]
+	if sent.UserID != "user-42" {
+		t.Errorf("expected event.UserID = \"user-42\", got %q", sent.UserID)
+	}
+	if sent.Type != kafka.EventTypeView {
+		t.Errorf("expected event.Type = %q, got %q", kafka.EventTypeView, sent.Type)
+	}
+	if len(sent.Categories) != 1 || sent.Categories[0] != expectedAnn.Category {
+		t.Errorf("expected event.Categories = [%d], got %v", expectedAnn.Category, sent.Categories)
+	}
+}
+
 // ----------------------------
 // Тесты для метода GetTopN
 // ----------------------------
 
 func TestGetTopN_InvalidJSON(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{}
+	repo := &fakeAnnRepo{}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -379,7 +380,7 @@ func TestGetTopN_InvalidJSON(t *testing.T) {
 
 func TestGetTopN_InvalidLimit(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{}
+	repo := &fakeAnnRepo{}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -395,7 +396,7 @@ func TestGetTopN_InvalidLimit(t *testing.T) {
 
 func TestGetTopN_RepoError_NoUser(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{returnGetTopNErr: errors.New("db fail")}
+	repo := &fakeAnnRepo{returnGetTopNErr: errors.New("db fail")}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -446,7 +447,7 @@ func TestGetTopN_Success_NoUser(t *testing.T) {
 			CreatedAt:    time.Now(),
 		},
 	}
-	repo := &fakeRepo{returnGetTopNAnns: expectedAnns, returnGetTopNErr: nil}
+	repo := &fakeAnnRepo{returnGetTopNAnns: expectedAnns, returnGetTopNErr: nil}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -484,7 +485,7 @@ func TestGetTopN_Success_NoUser(t *testing.T) {
 
 func TestSearch_MissingQuery(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{}
+	repo := &fakeAnnRepo{}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -502,7 +503,7 @@ func TestSearch_MissingQuery(t *testing.T) {
 
 func TestSearch_RepoError(t *testing.T) {
 	logger := zapTestLogger(t)
-	repo := &fakeRepo{returnSearchErr: errors.New("db fail")}
+	repo := &fakeAnnRepo{returnSearchErr: errors.New("db fail")}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -538,7 +539,7 @@ func TestSearch_Success_NoUser(t *testing.T) {
 			CreatedAt:    time.Now(),
 		},
 	}
-	repo := &fakeRepo{returnSearchAnns: expectedAnns, returnSearchErr: nil}
+	repo := &fakeAnnRepo{returnSearchAnns: expectedAnns, returnSearchErr: nil}
 	prod := &fakeProducer{}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
@@ -568,7 +569,7 @@ func TestSearch_Success_NoUser(t *testing.T) {
 	}
 }
 
-func TestSearch_Success_WithUser(t *testing.T) {
+func TestSearch_Success_WithUserParam(t *testing.T) {
 	logger := zapTestLogger(t)
 	expectedAnns := []repoAnn.Announcement{
 		{
@@ -585,15 +586,13 @@ func TestSearch_Success_WithUser(t *testing.T) {
 			CreatedAt:    time.Now(),
 		},
 	}
-	repo := &fakeRepo{returnSearchAnns: expectedAnns, returnSearchErr: nil}
+	repo := &fakeAnnRepo{returnSearchAnns: expectedAnns, returnSearchErr: nil}
 	prod := &fakeProducer{returnError: nil}
 	handler := NewAnnouncementHandler(logger, repo, prod)
 
-	req := httptest.NewRequest(http.MethodGet, "/announcements/search?q=bar", nil)
+	// передаём ?q=bar&user_id=user-xyz
+	req := httptest.NewRequest(http.MethodGet, "/announcements/search?q=bar&user_id=user-xyz", nil)
 	rr := httptest.NewRecorder()
-	sess := &session.Session{UserID: "user-xyz"}
-	ctxWithSess := middleware.ContextWithSession(req.Context(), sess)
-	req = req.WithContext(ctxWithSess)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/announcements/search", handler.Search).Methods(http.MethodGet)
@@ -613,9 +612,9 @@ func TestSearch_Success_WithUser(t *testing.T) {
 		t.Errorf("expected event.UserID=\"user-xyz\", got %q", sent.UserID)
 	}
 	if sent.Type != kafka.EventTypeSearch {
-		t.Errorf("expected event.Type=search, got %q", sent.Type)
+		t.Errorf("expected event.Type=%q, got %q", kafka.EventTypeSearch, sent.Type)
 	}
 	if len(sent.Categories) != 1 || sent.Categories[0] != expectedAnns[0].Category {
-		t.Errorf("expected event.Categories=[4], got %v", sent.Categories)
+		t.Errorf("expected event.Categories=[%d], got %v", expectedAnns[0].Category, sent.Categories)
 	}
 }

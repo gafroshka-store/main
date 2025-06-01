@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gafroshka-main/internal/contextutil"
 	"gafroshka-main/internal/kafka"
-	"net/http"
-	"time"
-
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+	"net/http"
+	"time"
 
 	"gafroshka-main/internal/announcement"
 	typesAnn "gafroshka-main/internal/types/announcement"
@@ -50,20 +48,6 @@ func (h *AnnouncementHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Отправка события просмотра в Kafka
-	if userID, ok := contextutil.GetUserIDFromContext(r.Context()); ok {
-		event := kafka.Event{
-			UserID:     userID,
-			Type:       kafka.EventTypeView,
-			Categories: []int{ann.Category},
-			Timestamp:  time.Now(),
-		}
-
-		if err := h.EventProducer.SendEvent(r.Context(), event); err != nil {
-			h.Logger.Warnf("Failed to send view event: %v", err)
-		}
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(ann); err != nil {
@@ -74,7 +58,7 @@ func (h *AnnouncementHandler) Create(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("announcement created: %s", ann.ID)
 }
 
-// остальные методы без изменений
+// GetByID handles GET /announcement/{id}
 func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -93,6 +77,22 @@ func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Отправляем событие "view" в Kafka, если есть user_id в запросе
+	userID := r.URL.Query().Get("user_id")
+	if userID != "" {
+		event := kafka.Event{
+			UserID:     userID,
+			Type:       kafka.EventTypeView,
+			Categories: []int{ann.Category},
+			Timestamp:  time.Now(),
+		}
+		if err := h.EventProducer.SendEvent(r.Context(), event); err != nil {
+			h.Logger.Warnf("failed to send view event: %v", err)
+		}
+	} else {
+		h.Logger.Infof("user_id not provided, skipping analytics event for GetByID")
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(ann); err != nil {
@@ -103,6 +103,7 @@ func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("fetched announcement by id: %s", id)
 }
 
+// GetTopN handles POST /announcements/top
 func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		UserID string `json:"user_id"`
@@ -152,6 +153,7 @@ func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Infof("fetched top %d announcements for user %s, categories %v", input.Limit, input.UserID, categories)
 }
 
+// Search handles GET /announcements/search?q=...&user_id=...
 func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
@@ -165,22 +167,30 @@ func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if userID, ok := contextutil.GetUserIDFromContext(r.Context()); ok {
-		categories := make([]int, 0, len(anns))
-		for _, a := range anns {
-			categories = append(categories, a.Category)
+	// Собираем уникальные категории из найденных объявлений
+	var categories []int
+	catSet := make(map[int]struct{})
+	for _, ann := range anns {
+		if _, exists := catSet[ann.Category]; !exists {
+			catSet[ann.Category] = struct{}{}
+			categories = append(categories, ann.Category)
 		}
+	}
 
+	// Отправляем событие "search" в Kafka, если есть user_id в запросе
+	userID := r.URL.Query().Get("user_id")
+	if userID != "" {
 		event := kafka.Event{
 			UserID:     userID,
 			Type:       kafka.EventTypeSearch,
 			Categories: categories,
 			Timestamp:  time.Now(),
 		}
-
 		if err := h.EventProducer.SendEvent(r.Context(), event); err != nil {
-			h.Logger.Warnf("Failed to send search event: %v", err)
+			h.Logger.Warnf("failed to send search event: %v", err)
 		}
+	} else {
+		h.Logger.Infof("user_id not provided, skipping analytics event for Search")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
