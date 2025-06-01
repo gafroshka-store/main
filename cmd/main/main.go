@@ -131,6 +131,7 @@ func main() {
 	// init Kafka Producer для отправки событий
 	kafkaProducer := kafka.NewProducer([]string{KafkaBrokers}, KafkaTopic, logger)
 	defer kafkaProducer.Close()
+
 	// init router
 	r := mux.NewRouter()
 
@@ -139,7 +140,8 @@ func main() {
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
 	annHandlers := userAnnHandlers.NewAnnouncementHandler(logger, announcementRepository, kafkaProducer)
-	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository, userRepository)
+	// Передаём kafkaProducer в ShoppingCartHandler
+	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository, userRepository, kafkaProducer)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
@@ -163,7 +165,7 @@ func main() {
 	authRouter.HandleFunc("/cart/{userID}", shoppingCartHandlers.GetCart).Methods("GET")
 	authRouter.HandleFunc("/cart/{userID}/purchase", shoppingCartHandlers.PurchaseFromCart).Methods("POST")
 
-	// Ручки НЕ требующие авторизации`
+	// Ручки НЕ требующие авторизации
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
 
 	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
