@@ -81,18 +81,18 @@ func (mr *MockAnnouncementRepoMockRecorder) GetInfoForShoppingCart(ids interface
 }
 
 // GetTopN mocks base method.
-func (m *MockAnnouncementRepo) GetTopN(limit int) ([]announcement.Announcement, error) {
+func (m *MockAnnouncementRepo) GetTopN(limit int, categories []int) ([]announcement.Announcement, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTopN", limit)
+	ret := m.ctrl.Call(m, "GetTopN", limit, categories)
 	ret0, _ := ret[0].([]announcement.Announcement)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetTopN indicates an expected call of GetTopN.
-func (mr *MockAnnouncementRepoMockRecorder) GetTopN(limit interface{}) *gomock.Call {
+func (mr *MockAnnouncementRepoMockRecorder) GetTopN(limit, categories interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopN", reflect.TypeOf((*MockAnnouncementRepo)(nil).GetTopN), limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopN", reflect.TypeOf((*MockAnnouncementRepo)(nil).GetTopN), limit, categories, )
 }
 
 // Search mocks base method.

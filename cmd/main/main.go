@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"gafroshka-main/internal/announcement"
+
 	annfb "gafroshka-main/internal/announcment_feedback"
 	"gafroshka-main/internal/app"
 	elastic "gafroshka-main/internal/elastic_search"
@@ -14,6 +15,7 @@ import (
 	handlersCart "gafroshka-main/internal/handlers/shopping_cart"
 	handlersUser "gafroshka-main/internal/handlers/user"
 	handlersUserFeedback "gafroshka-main/internal/handlers/user_feedback"
+	"gafroshka-main/internal/kafka"
 	"gafroshka-main/internal/middleware"
 	"gafroshka-main/internal/session"
 	cart "gafroshka-main/internal/shopping_cart"
@@ -22,9 +24,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/go-redis/redis/v8"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -33,9 +34,11 @@ import (
 )
 
 const (
-	cfgPath   = "config/config.yaml"
-	RedisAddr = "redis:6379"
-	ESAddr    = "http://elasticsearch:9200"
+	cfgPath      = "config/config.yaml"
+	RedisAddr    = "redis:6379"
+	ESAddr       = "http://elasticsearch:9200"
+	KafkaBrokers = "kafka:9092"
+	KafkaTopic   = "user-events"
 )
 
 func main() {
@@ -64,7 +67,8 @@ func main() {
 
 	// init db
 	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s "+"password=%s dbname=%s sslmode=disable",
+		"host=%s port=%d user=%s "+
+			"password=%s dbname=%s sslmode=disable",
 		c.CfgDB.Host, c.CfgDB.Port, c.CfgDB.Login, c.CfgDB.Password, c.CfgDB.Database,
 	)
 
@@ -74,7 +78,6 @@ func main() {
 	}
 
 	db.SetMaxOpenConns(c.MaxOpenConns)
-
 	err = db.Ping()
 	if err != nil {
 		logger.Infof("Failed to get response to ping: %v", err)
@@ -125,6 +128,10 @@ func main() {
 	annFeedbackRepository := annfb.NewFeedbackDBRepository(db, logger)
 	shoppingCartRepository := cart.NewShoppingCartRepository(db, logger)
 
+	// init Kafka Producer для отправки событий
+	kafkaProducer := kafka.NewProducer([]string{KafkaBrokers}, KafkaTopic, logger)
+	defer kafkaProducer.Close()
+
 	// init router
 	r := mux.NewRouter()
 
@@ -132,8 +139,9 @@ func main() {
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)
 	userFeedbackHandlers := handlersUserFeedback.NewUserFeedbackHandler(logger, userFeedbackRepository)
 	annFeedbackHandlers := handlersAnnFeedback.NewAnnouncementFeedbackHandler(logger, annFeedbackRepository)
-	annHandlers := userAnnHandlers.NewAnnouncementHandler(logger, announcementRepository)
-	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository, userRepository)
+	annHandlers := userAnnHandlers.NewAnnouncementHandler(logger, announcementRepository, kafkaProducer)
+	// Передаём kafkaProducer в ShoppingCartHandler
+	shoppingCartHandlers := handlersCart.NewShoppingCartHandler(logger, shoppingCartRepository, announcementRepository, userRepository, kafkaProducer)
 
 	// Ручки требующие авторизации
 	authRouter := r.PathPrefix("/api").Subrouter()
@@ -152,12 +160,12 @@ func main() {
 
 	authRouter.HandleFunc("/announcement", annHandlers.Create).Methods("POST")
 
-	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST")
+	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.AddToShoppingCart).Methods("POST") //
 	authRouter.HandleFunc("/cart/{userID}/item/{annID}", shoppingCartHandlers.DeleteFromShoppingCart).Methods("DELETE")
 	authRouter.HandleFunc("/cart/{userID}", shoppingCartHandlers.GetCart).Methods("GET")
-	authRouter.HandleFunc("/cart/{userID}/purchase", shoppingCartHandlers.PurchaseFromCart).Methods("POST")
+	authRouter.HandleFunc("/cart/{userID}/purchase", shoppingCartHandlers.PurchaseFromCart).Methods("POST") //
 
-	// Ручки НЕ требующие авторизации`
+	// Ручки НЕ требующие авторизации
 	noAuthRouter := r.PathPrefix("/api").Subrouter()
 
 	noAuthRouter.HandleFunc("/user/{id}", userHandlers.Info).Methods("GET")
@@ -166,11 +174,11 @@ func main() {
 	noAuthRouter.HandleFunc("/user/{id}/balance", userHandlers.GetBalance).Methods("GET")
 
 	noAuthRouter.HandleFunc("/user/feedback/user/{id}", userFeedbackHandlers.GetByUserID).Methods("GET")
-	noAuthRouter.HandleFunc("/announcement/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET")
+	noAuthRouter.HandleFunc("/announcement/feedback/announcement/{id}", annFeedbackHandlers.GetByAnnouncementID).Methods("GET") //
 
-	noAuthRouter.HandleFunc("/announcement/{id}", annHandlers.GetByID).Methods("GET")
-	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")
-	noAuthRouter.HandleFunc("/announcements/search", annHandlers.Search).Methods("GET")
+	noAuthRouter.HandleFunc("/announcements/top", annHandlers.GetTopN).Methods("POST")            //
+	noAuthRouter.HandleFunc("/announcement/{id}/{user_id}", annHandlers.GetByID).Methods("GET")   //
+	noAuthRouter.HandleFunc("/announcements/search/{user_id}", annHandlers.Search).Methods("GET") //
 
 	logger.Infow("starting server",
 		"type", "START",

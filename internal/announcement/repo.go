@@ -7,6 +7,9 @@ import (
 	"strings"
 
 	elastic "gafroshka-main/internal/elastic_search"
+
+	"github.com/lib/pq"
+
 	types "gafroshka-main/internal/types/announcement"
 	"gafroshka-main/internal/types/errors"
 
@@ -72,16 +75,33 @@ func (ar *AnnouncementDBRepository) Create(a types.CreateAnnouncement) (*Announc
 	return &newAnn, nil
 }
 
-func (ar *AnnouncementDBRepository) GetTopN(limit int) ([]Announcement, error) {
-	query := `
-	SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at 
-	FROM announcement 
-	WHERE is_active = TRUE 
-	ORDER BY rating DESC 
-	LIMIT $1
-	`
+func (ar *AnnouncementDBRepository) GetTopN(limit int, categories []int) ([]Announcement, error) {
+	var (
+		query string
+		args  []interface{}
+	)
 
-	rows, err := ar.DB.Query(query, limit)
+	if len(categories) > 0 {
+		query = `
+			SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at
+			FROM announcement
+			WHERE is_active = TRUE AND category = ANY($1)
+			ORDER BY rating DESC, rating_count DESC
+			LIMIT $2
+		`
+		args = append(args, pq.Array(categories), limit)
+	} else {
+		query = `
+			SELECT id, name, description, user_seller_id, price, category, discount, is_active, rating, rating_count, created_at
+			FROM announcement
+			WHERE is_active = TRUE
+			ORDER BY rating DESC, rating_count DESC
+			LIMIT $1
+		`
+		args = append(args, limit)
+	}
+
+	rows, err := ar.DB.Query(query, args...)
 	if err != nil {
 		ar.Logger.Errorf("Error getting top %d announcements: %v", limit, err)
 		return nil, errors.ErrDBInternal

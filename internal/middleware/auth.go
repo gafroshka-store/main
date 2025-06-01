@@ -31,3 +31,14 @@ func ContextWithSession(ctx context.Context, s *session.Session) context.Context
 	// создаем новый контекст с нашим ключом и сессией
 	return context.WithValue(ctx, sessKey, s)
 }
+
+// GetSessionFromContext извлекает сессию из контекста
+func GetSessionFromContext(ctx context.Context) (*session.Session, bool) {
+	val := ctx.Value(sessKey)
+	if val == nil {
+		return nil, false
+	}
+
+	sess, ok := val.(*session.Session)
+	return sess, ok
+}

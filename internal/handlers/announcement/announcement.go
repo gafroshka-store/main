@@ -1,26 +1,37 @@
-package handlers
+package announcement
 
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"gafroshka-main/internal/kafka"
+	"net/http"
+	"time"
+
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
-	"net/http"
 
 	"gafroshka-main/internal/announcement"
 	typesAnn "gafroshka-main/internal/types/announcement"
 	myErr "gafroshka-main/internal/types/errors"
 )
 
+// AnnouncementHandler работает с AnnouncementRepo и EventProducer интерфейсами.
 type AnnouncementHandler struct {
 	Logger           *zap.SugaredLogger
 	AnnouncementRepo announcement.AnnouncementRepo
+	EventProducer    kafka.EventProducer
 }
 
-func NewAnnouncementHandler(l *zap.SugaredLogger, ar announcement.AnnouncementRepo) *AnnouncementHandler {
+func NewAnnouncementHandler(
+	l *zap.SugaredLogger,
+	ar announcement.AnnouncementRepo,
+	kp kafka.EventProducer,
+) *AnnouncementHandler {
 	return &AnnouncementHandler{
 		Logger:           l,
 		AnnouncementRepo: ar,
+		EventProducer:    kp,
 	}
 }
 
@@ -67,6 +78,22 @@ func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Отправляем событие "view" в Kafka, если есть user_id в запросе
+	userID := vars["user_id"]
+	if userID != "" {
+		event := kafka.Event{
+			UserID:     userID,
+			Type:       kafka.EventTypeView,
+			Categories: []int{ann.Category},
+			Timestamp:  time.Now(),
+		}
+		if err := h.EventProducer.SendEvent(r.Context(), event); err != nil {
+			h.Logger.Warnf("failed to send view event: %v", err)
+		}
+	} else {
+		h.Logger.Infof("user_id not provided, skipping analytics event for GetByID")
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(ann); err != nil {
@@ -80,7 +107,8 @@ func (h *AnnouncementHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // GetTopN handles POST /announcements/top
 func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Limit int `json:"limit"`
+		UserID string `json:"user_id"`
+		Limit  int    `json:"limit"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -93,7 +121,24 @@ func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	anns, err := h.AnnouncementRepo.GetTopN(input.Limit)
+	var categories []int
+	if input.UserID != "" {
+		// Запрос к сервису аналитики
+		url := fmt.Sprintf("http://localhost:8082/user/%s/preferences?top=%d", input.UserID, input.Limit)
+		resp, err := http.Get(url)
+		if err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				if err := json.NewDecoder(resp.Body).Decode(&categories); err != nil {
+					h.Logger.Warnf("Failed to decode user preferences: %v", err)
+				}
+			}
+		} else {
+			h.Logger.Warnf("Failed to get user preferences: %v", err)
+		}
+	}
+
+	anns, err := h.AnnouncementRepo.GetTopN(input.Limit, categories)
 	if err != nil {
 		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
 		return
@@ -106,10 +151,10 @@ func (h *AnnouncementHandler) GetTopN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Logger.Infof("fetched top %d announcements", input.Limit)
+	h.Logger.Infof("fetched top %d announcements for user %s, categories %v", input.Limit, input.UserID, categories)
 }
 
-// Search handles GET /announcements/search?q={query}
+// Search handles GET /announcements/search?q=...&user_id=...
 func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	if q == "" {
@@ -121,6 +166,33 @@ func (h *AnnouncementHandler) Search(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
 		return
+	}
+
+	// Собираем уникальные категории из найденных объявлений
+	var categories []int
+	catSet := make(map[int]struct{})
+	for _, ann := range anns {
+		if _, exists := catSet[ann.Category]; !exists {
+			catSet[ann.Category] = struct{}{}
+			categories = append(categories, ann.Category)
+		}
+	}
+
+	// Отправляем событие "search" в Kafka, если есть user_id в запросе
+	vars := mux.Vars(r)
+	userID := vars["user_id"]
+	if userID != "" {
+		event := kafka.Event{
+			UserID:     userID,
+			Type:       kafka.EventTypeSearch,
+			Categories: categories,
+			Timestamp:  time.Now(),
+		}
+		if err := h.EventProducer.SendEvent(r.Context(), event); err != nil {
+			h.Logger.Warnf("failed to send search event: %v", err)
+		}
+	} else {
+		h.Logger.Infof("user_id not provided, skipping analytics event for Search")
 	}
 
 	w.Header().Set("Content-Type", "application/json")

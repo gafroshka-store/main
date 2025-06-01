@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"gafroshka-main/internal/kafka"
 	"gafroshka-main/internal/user"
 	"math"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+	"time"
 
 	"gafroshka-main/internal/announcement"
 	"gafroshka-main/internal/shopping_cart"
@@ -23,6 +25,7 @@ type ShoppingCartHandler struct {
 	CartRepo         shopping_cart.ShoppingCartRepo
 	AnnouncementRepo announcement.AnnouncementRepo
 	UserRepo         user.UserRepo
+	EventProducer    kafka.EventProducer
 }
 
 // NewShoppingCartHandler конструктор
@@ -31,11 +34,14 @@ func NewShoppingCartHandler(
 	cr shopping_cart.ShoppingCartRepo,
 	ar announcement.AnnouncementRepo,
 	ur user.UserRepo,
+	ep kafka.EventProducer,
 ) *ShoppingCartHandler {
 	return &ShoppingCartHandler{
-		Logger: log, CartRepo: cr,
+		Logger:           log,
+		CartRepo:         cr,
 		AnnouncementRepo: ar,
 		UserRepo:         ur,
+		EventProducer:    ep,
 	}
 }
 
@@ -58,6 +64,22 @@ func (h *ShoppingCartHandler) AddToShoppingCart(w http.ResponseWriter, r *http.R
 	if err != nil {
 		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
 		return
+	}
+
+	// После успешного добавления — отправляем событие "view" (просмотр карточки объявления) в Kafka
+	ann, err := h.AnnouncementRepo.GetByID(annID)
+	if err != nil {
+		h.Logger.Warnf("failed to fetch announcement %s for analytics: %v", annID, err)
+	} else {
+		event := kafka.Event{
+			UserID:     userID,
+			Type:       kafka.EventTypeView,
+			Categories: []int{ann.Category},
+			Timestamp:  time.Now(),
+		}
+		if err := h.EventProducer.SendEvent(r.Context(), event); err != nil {
+			h.Logger.Warnf("failed to send view event on AddToShoppingCart: %v", err)
+		}
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -106,7 +128,7 @@ func (h *ShoppingCartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 	ids, err := h.CartRepo.GetByUserID(userID)
 	if err != nil {
 		if errors.Is(err, myErr.ErrNotFound) {
-			// Если пусто, то возвращаем ноу контент
+			// Если пусто, то возвращаем no content
 			resp := []typesAnn.InfoForSC{}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNoContent)
@@ -137,14 +159,14 @@ func (h *ShoppingCartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 }
 
 // PurchaseFromCart - POST /cart/{userID}/purchase
-// Принимает в теле запроса массив в джейсоне айдишников товаров:
+// Принимает в теле запроса массив в JSON айдишников товаров:
 // [
 //
 //	"id1",
 //	"id2"
 //
 // ]
-// Ожидаю, что фронт, после успешной оплаты сделает вывод, что вы успешно купили эти товары
+// После успешной оплаты возвращаем {"status": "success", "total": <сумма>}
 func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID := vars["userID"]
@@ -157,18 +179,30 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	// Декодируем список ID объявлений из тела запроса
 	var requestedIDs []string
 	if err := json.NewDecoder(r.Body).Decode(&requestedIDs); err != nil {
-		myErr.SendErrorTo(w, err, http.StatusBadRequest, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "invalid request body",
+		})
 		return
 	}
 	if len(requestedIDs) == 0 {
-		myErr.SendErrorTo(w, errors.New("empty announcement list"), http.StatusBadRequest, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "empty announcement list",
+		})
 		return
 	}
 
 	// Получаем текущую корзину пользователя
 	cartIDs, err := h.CartRepo.GetByUserID(userID)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "failed to get cart",
+		})
 		return
 	}
 
@@ -179,7 +213,11 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	}
 	for _, reqID := range requestedIDs {
 		if !validItems[reqID] {
-			myErr.SendErrorTo(w, errors.New("one or more items not in cart"), http.StatusBadRequest, h.Logger)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": "one or more items not in cart",
+			})
 			return
 		}
 	}
@@ -187,7 +225,11 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	// Получаем информацию о товарах для расчета суммы
 	infos, err := h.AnnouncementRepo.GetInfoForShoppingCart(requestedIDs)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "failed to get announcement info",
+		})
 		return
 	}
 
@@ -200,19 +242,31 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	// Получаем баланс пользователя
 	balance, err := h.UserRepo.GetBalanceByUserID(userID)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "failed to get user balance",
+		})
 		return
 	}
 
 	if balance < total {
-		myErr.SendErrorTo(w, errors.New("insufficient funds"), http.StatusPaymentRequired, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusPaymentRequired)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "insufficient funds",
+		})
 		return
 	}
 
 	// Списываем деньги у пользователя
 	_, err = h.UserRepo.TopUpBalance(userID, -total)
 	if err != nil {
-		myErr.SendErrorTo(w, err, http.StatusInternalServerError, h.Logger)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "failed to charge user",
+		})
 		return
 	}
 
@@ -225,8 +279,37 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 		}
 	}
 
+	// После успешной покупки — отправляем событие "purchase" в Kafka
+	var categories []int
+	catSet := make(map[int]struct{})
+	for _, annID := range requestedIDs {
+		ann, err := h.AnnouncementRepo.GetByID(annID)
+		if err != nil {
+			h.Logger.Warnf("failed to fetch announcement %s for analytics: %v", annID, err)
+			continue
+		}
+		if _, exists := catSet[ann.Category]; !exists {
+			catSet[ann.Category] = struct{}{}
+			categories = append(categories, ann.Category)
+		}
+	}
+	if len(categories) > 0 {
+		event := kafka.Event{
+			UserID:     userID,
+			Type:       kafka.EventTypePurchase,
+			Categories: categories,
+			Timestamp:  time.Now(),
+		}
+		if err := h.EventProducer.SendEvent(r.Context(), event); err != nil {
+			h.Logger.Warnf("failed to send purchase event: %v", err)
+		}
+	} else {
+		h.Logger.Infof("no valid categories found for PurchaseFromCart, skipping analytics")
+	}
+
 	// Отправляем подтверждение
 	h.Logger.Infof("user %s purchased items %v for total %d", userID, requestedIDs, total)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "success",
