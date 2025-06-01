@@ -69,7 +69,7 @@ services:
     volumes:
       - esdata:/usr/share/elasticsearch/data
     healthcheck:
-      test: [ "CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"'" ]
+      test: [ "CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'" ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -170,10 +170,6 @@ volumes:
   db_data:
   redis_data:
   esdata:
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/esdata
   db_analytics_data:
 
 networks:
