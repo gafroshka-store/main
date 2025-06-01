@@ -19,8 +19,6 @@ import (
 	cart "gafroshka-main/internal/shopping_cart"
 	"gafroshka-main/internal/user"
 	userFeedback "gafroshka-main/internal/user_feedback"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 	"time"
@@ -133,11 +131,7 @@ func main() {
 
 	// init metrics
 	r.Handle("/metrics", promhttp.Handler())
-
-	prometheus.MustRegister(
-		collectors.NewGoCollector(),
-		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
-	)
+	r.Use(middleware.MetricsMiddleware)
 
 	// init handlers
 	userHandlers := handlersUser.NewUserHandler(logger, userRepository, sessionRepository)

@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+  - name: 'default'
+    folder: 'Auto Dashboards'
+    type: file
+    options:
+      path: /etc/grafana/dashboards
+      updateIntervalSeconds: 10
