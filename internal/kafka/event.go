@@ -5,9 +5,10 @@ import "time"
 type EventType string
 
 const (
-	EventTypeSearch   EventType = "search"
-	EventTypeView     EventType = "view"
-	EventTypePurchase EventType = "purchase"
+	Search    EventType = "search"
+	View      EventType = "view"
+	AddToCart EventType = "addToCart"
+	Purchase  EventType = "purchase"
 )
 
 type Event struct {

@@ -73,7 +73,7 @@ func (h *ShoppingCartHandler) AddToShoppingCart(w http.ResponseWriter, r *http.R
 	} else {
 		event := kafka.Event{
 			UserID:     userID,
-			Type:       kafka.EventTypeView,
+			Type:       kafka.AddToCart,
 			Categories: []int{ann.Category},
 			Timestamp:  time.Now(),
 		}
@@ -296,7 +296,7 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 	if len(categories) > 0 {
 		event := kafka.Event{
 			UserID:     userID,
-			Type:       kafka.EventTypePurchase,
+			Type:       kafka.Purchase,
 			Categories: categories,
 			Timestamp:  time.Now(),
 		}

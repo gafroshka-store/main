@@ -42,7 +42,7 @@ func TestService_ProcessEvent_EmptyUserID(t *testing.T) {
 	ctx := context.Background()
 	evt := kafka.Event{
 		UserID:     "", // пустой user
-		Type:       kafka.EventTypeView,
+		Type:       kafka.View,
 		Categories: []int{1, 2},
 	}
 
@@ -63,7 +63,7 @@ func TestService_ProcessEvent_SearchEvent(t *testing.T) {
 	ctx := context.Background()
 	evt := kafka.Event{
 		UserID:     "u-1",
-		Type:       kafka.EventTypeSearch,
+		Type:       kafka.Search,
 		Categories: []int{3, 3, 5},
 	}
 
@@ -94,7 +94,7 @@ func TestService_ProcessEvent_ViewEvent(t *testing.T) {
 	ctx := context.Background()
 	evt := kafka.Event{
 		UserID:     "u-2",
-		Type:       kafka.EventTypeView,
+		Type:       kafka.View,
 		Categories: []int{7, 9},
 	}
 
@@ -122,7 +122,7 @@ func TestService_ProcessEvent_PurchaseEvent(t *testing.T) {
 	ctx := context.Background()
 	evt := kafka.Event{
 		UserID:     "u-3",
-		Type:       kafka.EventTypePurchase,
+		Type:       kafka.Purchase,
 		Categories: []int{4},
 	}
 
@@ -133,9 +133,9 @@ func TestService_ProcessEvent_PurchaseEvent(t *testing.T) {
 	if !repo.called {
 		t.Fatalf("expected repo.UpdatePreferences to be called")
 	}
-	// для PURCHASE учитывается только первая категория, вес = 3
+	// для PURCHASE учитывается только первая категория, вес = 5
 	expectedWeights := map[int]int{
-		4: 3,
+		4: 5,
 	}
 	if !reflect.DeepEqual(repo.lastWeights, expectedWeights) {
 		t.Errorf("expected weights %v, got %v", expectedWeights, repo.lastWeights)
@@ -150,7 +150,7 @@ func TestService_ProcessEvent_NoCategories(t *testing.T) {
 	ctx := context.Background()
 	evt := kafka.Event{
 		UserID:     "u-4",
-		Type:       kafka.EventTypeView,
+		Type:       kafka.View,
 		Categories: []int{}, // отсутствуют категории
 	}
 
@@ -171,7 +171,7 @@ func TestService_ProcessEvent_RepoError(t *testing.T) {
 	ctx := context.Background()
 	evt := kafka.Event{
 		UserID:     "u-5",
-		Type:       kafka.EventTypeSearch,
+		Type:       kafka.Search,
 		Categories: []int{2},
 	}
 

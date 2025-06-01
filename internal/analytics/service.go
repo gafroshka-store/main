@@ -26,17 +26,21 @@ func (s *Service) ProcessEvent(ctx context.Context, event kafka.Event) error {
 
 	weights := make(map[int]int)
 	switch event.Type {
-	case kafka.EventTypeSearch:
+	case kafka.Search:
 		for _, cat := range event.Categories {
 			weights[cat] += 1
 		}
-	case kafka.EventTypeView:
+	case kafka.View:
 		if len(event.Categories) > 0 {
 			weights[event.Categories[0]] += 2
 		}
-	case kafka.EventTypePurchase:
+	case kafka.AddToCart:
 		if len(event.Categories) > 0 {
 			weights[event.Categories[0]] += 3
+		}
+	case kafka.Purchase:
+		if len(event.Categories) > 0 {
+			weights[event.Categories[0]] += 5
 		}
 	}
 
