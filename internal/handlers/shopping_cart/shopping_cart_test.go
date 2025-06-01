@@ -260,10 +260,10 @@ func TestShoppingCartHandler_PurchaseFromCart(t *testing.T) {
 	requestedIDs := []string{itemID1, itemID2}
 	cartItems := []string{itemID1, itemID2, uuid.New().String()}
 	infos := []typesAnn.InfoForSC{
-		{ID: itemID1, Price: 1000},
-		{ID: itemID2, Price: 2000},
+		{ID: itemID1, Price: 1000, Discount: 10},
+		{ID: itemID2, Price: 2000, Discount: 10},
 	}
-	total := int64(3000)
+	total := int64(2700)
 
 	tests := []struct {
 		name           string
@@ -344,7 +344,11 @@ func TestShoppingCartHandler_PurchaseFromCart(t *testing.T) {
 				if respBody["status"] != "success" {
 					t.Errorf("expected success status, got %v", respBody["status"])
 				}
-				if int64(respBody["total"].(float64)) != total {
+				res, ok := respBody["total"].(float64)
+				if !ok {
+					t.Errorf("expected total to be float64, got %v", respBody["total"])
+				}
+				if int64(res) != total {
 					t.Errorf("expected total %d, got %v", total, respBody["total"])
 				}
 			}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"gafroshka-main/internal/user"
+	"math"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -192,7 +193,8 @@ func (h *ShoppingCartHandler) PurchaseFromCart(w http.ResponseWriter, r *http.Re
 
 	var total int64 = 0
 	for _, item := range infos {
-		total += item.Price
+		discountedPrice := float64(item.Price*(int64(100)-int64(item.Discount))) / 100.0
+		total += int64(math.Ceil(discountedPrice))
 	}
 
 	// Получаем баланс пользователя
