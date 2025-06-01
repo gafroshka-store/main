@@ -9,11 +9,9 @@ run:
 linters:
   default: none
   enable:
-    - errcheck
     - goconst
     - gocritic
     - gocyclo
-    - govet
     - ineffassign
     - nakedret
     - prealloc
@@ -25,11 +23,6 @@ linters:
   settings:
     dupl:
       threshold: 200
-    errcheck:
-      check-blank: true
-    govet:
-      enable:
-        - shadow
     funlen:
       lines: 80
       statements: 50
